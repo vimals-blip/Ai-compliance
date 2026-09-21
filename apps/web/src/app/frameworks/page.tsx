@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { api } from '../../lib/api';
+import { getPersistedList, addPersistedItem } from '../../lib/clientStore';
 import {
   Layers,
   ShieldCheck,
@@ -15,6 +16,39 @@ import {
   Check,
   Sparkles,
 } from 'lucide-react';
+
+const DEFAULT_FRAMEWORKS = [
+  {
+    id: 'soc2-1',
+    name: 'SOC 2 Type II',
+    code: 'SOC2',
+    version: '2022',
+    description: 'AICPA Trust Services Criteria covering Security, Availability, and Confidentiality.',
+    controlsCount: 64,
+    effectiveCount: 58,
+    score: 90.6,
+  },
+  {
+    id: 'iso-1',
+    name: 'ISO/IEC 27001:2022',
+    code: 'ISO27001',
+    version: '2022',
+    description: 'International standard for Information Security Management Systems (ISMS Annex A controls).',
+    controlsCount: 93,
+    effectiveCount: 76,
+    score: 81.7,
+  },
+  {
+    id: 'nist-1',
+    name: 'NIST Cybersecurity Framework',
+    code: 'NIST-CSF',
+    version: 'v2.0',
+    description: 'National Institute of Standards and Technology CSF core: Govern, Identify, Protect, Detect, Respond, Recover.',
+    controlsCount: 108,
+    effectiveCount: 85,
+    score: 78.7,
+  },
+];
 
 const AVAILABLE_FRAMEWORKS = [
   {
@@ -70,44 +104,11 @@ export default function FrameworksPage() {
     async function load() {
       try {
         const res = await api.getFrameworks();
-        if (Array.isArray(res) && res.length > 0) {
-          setFrameworks(res);
-        } else {
-          throw new Error('Empty');
-        }
+        const loaded = getPersistedList('frameworks', Array.isArray(res) ? res : [], DEFAULT_FRAMEWORKS);
+        setFrameworks(loaded);
       } catch (e) {
-        setFrameworks([
-          {
-            id: 'soc2-1',
-            name: 'SOC 2 Type II',
-            code: 'SOC2',
-            version: '2022',
-            description: 'AICPA Trust Services Criteria covering Security, Availability, and Confidentiality.',
-            controlsCount: 64,
-            effectiveCount: 58,
-            score: 90.6,
-          },
-          {
-            id: 'iso-1',
-            name: 'ISO/IEC 27001:2022',
-            code: 'ISO27001',
-            version: '2022',
-            description: 'International standard for Information Security Management Systems (ISMS Annex A controls).',
-            controlsCount: 93,
-            effectiveCount: 76,
-            score: 81.7,
-          },
-          {
-            id: 'nist-1',
-            name: 'NIST Cybersecurity Framework',
-            code: 'NIST-CSF',
-            version: 'v2.0',
-            description: 'National Institute of Standards and Technology CSF core: Govern, Identify, Protect, Detect, Respond, Recover.',
-            controlsCount: 108,
-            effectiveCount: 85,
-            score: 78.7,
-          },
-        ]);
+        const loaded = getPersistedList('frameworks', [], DEFAULT_FRAMEWORKS);
+        setFrameworks(loaded);
       } finally {
         setLoading(false);
       }
@@ -124,7 +125,8 @@ export default function FrameworksPage() {
       // client-side fallback
     }
 
-    setFrameworks((prev) => [...prev, fw]);
+    const updated = addPersistedItem('frameworks', fw, frameworks);
+    setFrameworks(updated);
     setImportedCodes((prev) => [...prev, fw.code]);
     setImportSuccess(`Successfully imported ${fw.name}! Controls mapped automatically.`);
     setTimeout(() => {

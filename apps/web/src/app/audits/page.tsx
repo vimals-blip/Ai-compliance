@@ -5,6 +5,7 @@ import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { StatusBadge } from '../../components/common/StatusBadge';
 import { SeverityBadge } from '../../components/common/SeverityBadge';
 import { generateSimplePDF } from '../../lib/pdfGenerator';
+import { getPersistedList, addPersistedItem, updatePersistedItem, removePersistedItem, savePersistedList } from '../../lib/clientStore';
 import {
   FileCheck,
   Calendar,
@@ -358,7 +359,8 @@ export default function AuditsPage() {
 
       if (res.ok) {
         const created: AuditItem = await res.json();
-        setAudits((prev) => [created, ...prev]);
+        const updatedList = addPersistedItem('audits', created, audits);
+        setAudits(updatedList);
         setSelectedAudit(created);
         setCreateModalOpen(false);
         setSuccessToast(`Audit "${created.name}" created successfully and workspace initialized!`);
@@ -389,12 +391,16 @@ export default function AuditsPage() {
         const res = await fetch('/api/audits');
         if (res.ok) {
           const data = await res.json();
-          if (Array.isArray(data) && data.length > 0) {
-            setAudits(data);
-          }
+          const loaded = getPersistedList('audits', Array.isArray(data) ? data : [], AUDITS_DATA);
+          setAudits(loaded);
+        } else {
+          const loaded = getPersistedList('audits', [], AUDITS_DATA);
+          setAudits(loaded);
         }
       } catch (err) {
         console.warn('Could not fetch audits from API:', err);
+        const loaded = getPersistedList('audits', [], AUDITS_DATA);
+        setAudits(loaded);
       }
     }
     loadData();
@@ -414,9 +420,8 @@ export default function AuditsPage() {
   const handleMarkComplete = async () => {
     if (!selectedAudit) return;
     const updatedStatus = 'Completed' as const;
-    setAudits((prev) =>
-      prev.map((a) => (a.id === selectedAudit.id ? { ...a, status: updatedStatus } : a))
-    );
+    const updatedList = updatePersistedItem('audits', selectedAudit.id, { status: updatedStatus }, audits);
+    setAudits(updatedList);
     setSelectedAudit((prev) => (prev ? { ...prev, status: updatedStatus } : null));
     setCompletedSuccess(true);
     setTimeout(() => setCompletedSuccess(false), 3000);
@@ -486,7 +491,8 @@ export default function AuditsPage() {
       },
     };
 
-    setAudits((prev) => prev.map((a) => (a.id === updatedAudit.id ? updatedAudit : a)));
+    const updatedList = updatePersistedItem('audits', updatedAudit.id, updatedAudit, audits);
+    setAudits(updatedList);
     if (selectedAudit?.id === updatedAudit.id) {
       setSelectedAudit(updatedAudit);
     }
@@ -502,7 +508,8 @@ export default function AuditsPage() {
     if (!window.confirm(`Are you sure you want to delete audit "${name}"? This action cannot be undone.`)) {
       return;
     }
-    setAudits((prev) => prev.filter((a) => a.id !== id));
+    const updatedList = removePersistedItem('audits', id, audits);
+    setAudits(updatedList);
     if (selectedAudit?.id === id) {
       setSelectedAudit(null);
     }
@@ -570,7 +577,8 @@ export default function AuditsPage() {
 
     const updatedAudit = { ...selectedAudit, correctiveActions: updatedCAs };
     setSelectedAudit(updatedAudit);
-    setAudits((prev) => prev.map((a) => (a.id === updatedAudit.id ? updatedAudit : a)));
+    const updatedList = updatePersistedItem('audits', updatedAudit.id, updatedAudit, audits);
+    setAudits(updatedList);
     setCaModalOpen(false);
     setSuccessToast(
       caModalMode === 'create'
@@ -589,7 +597,8 @@ export default function AuditsPage() {
     const updatedCAs = selectedAudit.correctiveActions.filter((c) => c.id !== caId);
     const updatedAudit = { ...selectedAudit, correctiveActions: updatedCAs };
     setSelectedAudit(updatedAudit);
-    setAudits((prev) => prev.map((a) => (a.id === updatedAudit.id ? updatedAudit : a)));
+    const updatedList = updatePersistedItem('audits', updatedAudit.id, updatedAudit, audits);
+    setAudits(updatedList);
     setSuccessToast('Corrective action deleted.');
     setTimeout(() => setSuccessToast(null), 3500);
 
@@ -651,7 +660,8 @@ export default function AuditsPage() {
 
     const updatedAudit = { ...selectedAudit, requirements: updatedReqs };
     setSelectedAudit(updatedAudit);
-    setAudits((prev) => prev.map((a) => (a.id === updatedAudit.id ? updatedAudit : a)));
+    const updatedList = updatePersistedItem('audits', updatedAudit.id, updatedAudit, audits);
+    setAudits(updatedList);
     setReqModalOpen(false);
     setSuccessToast(
       reqModalMode === 'create'
@@ -671,7 +681,8 @@ export default function AuditsPage() {
     const updatedReqs = selectedAudit.requirements.filter((r) => r.id !== reqId);
     const updatedAudit = { ...selectedAudit, requirements: updatedReqs };
     setSelectedAudit(updatedAudit);
-    setAudits((prev) => prev.map((a) => (a.id === updatedAudit.id ? updatedAudit : a)));
+    const updatedList = updatePersistedItem('audits', updatedAudit.id, updatedAudit, audits);
+    setAudits(updatedList);
     setSuccessToast('Requirement removed.');
     setTimeout(() => setSuccessToast(null), 3500);
 

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { StatusBadge } from '../../components/common/StatusBadge';
+import { getPersistedList, addPersistedItem, updatePersistedItem, removePersistedItem } from '../../lib/clientStore';
 import {
   SlidersHorizontal,
   Search,
@@ -122,12 +123,16 @@ export default function ControlsPage() {
         const res = await fetch('/api/controls');
         if (res.ok) {
           const data = await res.json();
-          if (Array.isArray(data) && data.length > 0) {
-            setControls(data);
-          }
+          const loaded = getPersistedList('controls', Array.isArray(data) ? data : [], DEFAULT_CONTROLS);
+          setControls(loaded);
+        } else {
+          const loaded = getPersistedList('controls', [], DEFAULT_CONTROLS);
+          setControls(loaded);
         }
       } catch (err) {
-        console.warn('Could not load controls from API, using default set:', err);
+        console.warn('Could not load controls from API, using persisted set:', err);
+        const loaded = getPersistedList('controls', [], DEFAULT_CONTROLS);
+        setControls(loaded);
       }
       try {
         const evRes = await fetch('/api/evidence');
@@ -235,19 +240,13 @@ export default function ControlsPage() {
       console.warn('Failed to persist control update via API:', err);
     }
 
-    setControls((prev) =>
-      prev.map((c) =>
-        c.id === selectedControl.id
-          ? {
-              ...c,
-              status: editStatus,
-              maturityLevel: editMaturity,
-              notes: editNotes,
-              evidenceMapped: editEvidence,
-            }
-          : c
-      )
-    );
+    const updated = updatePersistedItem('controls', selectedControl.id, {
+      status: editStatus,
+      maturityLevel: editMaturity,
+      notes: editNotes,
+      evidenceMapped: editEvidence,
+    }, controls);
+    setControls(updated);
     setSelectedControl((prev: any) => ({
       ...prev,
       status: editStatus,
@@ -288,7 +287,8 @@ export default function ControlsPage() {
       });
     } catch {}
 
-    setControls([newCtrl, ...controls]);
+    const updated = addPersistedItem('controls', newCtrl, controls);
+    setControls(updated);
     setShowAddModal(false);
     setNewCode('');
     setNewTitle('');
@@ -302,7 +302,8 @@ export default function ControlsPage() {
         method: 'DELETE',
       });
     } catch {}
-    setControls((prev) => prev.filter((c) => c.id !== id && c.code !== code));
+    const updated = removePersistedItem('controls', id || code, controls);
+    setControls(updated);
     if (selectedControl && (selectedControl.id === id || selectedControl.code === code)) {
       setSelectedControl(null);
     }

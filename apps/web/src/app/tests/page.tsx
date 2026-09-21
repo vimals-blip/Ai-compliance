@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { api } from '../../lib/api';
+import { getPersistedList, savePersistedList, updatePersistedItem } from '../../lib/clientStore';
 import {
   Cpu,
   CheckCircle2,
@@ -64,9 +65,12 @@ export default function AutomatedTestsPage() {
     async function loadTests() {
       try {
         const res = await api.getAutomatedTests();
-        setTests(res.tests || []);
+        const loaded = getPersistedList<AutomatedTestItem>('automated_tests', Array.isArray(res?.tests) ? res.tests : []);
+        setTests(loaded);
       } catch (err) {
         console.error('Failed to load tests:', err);
+        const loaded = getPersistedList<AutomatedTestItem>('automated_tests', []);
+        setTests(loaded);
       } finally {
         setLoading(false);
       }
@@ -95,18 +99,20 @@ export default function AutomatedTestsPage() {
       // fallback
     } finally {
       setTimeout(() => {
-        setTests((prev) =>
-          prev.map((t) =>
+        setTests((prev) => {
+          const next = prev.map((t) =>
             t.id === testId
               ? {
                   ...t,
                   lastRun: 'Just now',
                   durationMs: Math.floor(Math.random() * 200) + 150,
-                  status: remediatedIds.includes(testId) ? 'PASS' : t.status,
+                  status: (remediatedIds.includes(testId) ? 'PASS' : t.status) as 'PASS' | 'FAIL' | 'WARN',
                 }
               : t
-          )
-        );
+          );
+          savePersistedList('automated_tests', next);
+          return next;
+        });
         setRunningId(null);
       }, 800);
     }
@@ -117,13 +123,15 @@ export default function AutomatedTestsPage() {
     for (const t of tests) {
       await new Promise((r) => setTimeout(r, 120));
     }
-    setTests((prev) =>
-      prev.map((t) => ({
+    setTests((prev) => {
+      const next = prev.map((t) => ({
         ...t,
         lastRun: 'Just now',
-        status: remediatedIds.includes(t.id) ? 'PASS' : t.status,
-      }))
-    );
+        status: (remediatedIds.includes(t.id) ? 'PASS' : t.status) as 'PASS' | 'FAIL' | 'WARN',
+      }));
+      savePersistedList('automated_tests', next);
+      return next;
+    });
     setRunningAll(false);
   };
 
@@ -142,18 +150,12 @@ export default function AutomatedTestsPage() {
     }
 
     setRemediatedIds((prev) => [...prev, test.id]);
-    setTests((prev) =>
-      prev.map((t) =>
-        t.id === test.id
-          ? {
-              ...t,
-              status: 'PASS',
-              lastRun: 'Just now',
-              details: 'All IAM console users have active MFA enforced. 0 non-compliant users detected.',
-            }
-          : t
-      )
-    );
+    const updated = updatePersistedItem<AutomatedTestItem>('automated_tests', test.id, {
+      status: 'PASS',
+      lastRun: 'Just now',
+      details: 'All IAM console users have active MFA enforced. 0 non-compliant users detected.',
+    }, tests);
+    setTests(updated);
 
     setSelectedTest((prev) =>
       prev && prev.id === test.id

@@ -3,6 +3,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import {
+  getPersistedList,
+  addPersistedItem,
+  updatePersistedItem,
+  removePersistedItem,
+  savePersistedList,
+} from '../../lib/clientStore';
+import {
   FileText,
   Plus,
   Sparkles,
@@ -271,12 +278,15 @@ export default function PoliciesPage() {
         const res = await fetch('/api/policies');
         if (res.ok) {
           const data = await res.json();
-          if (Array.isArray(data) && data.length > 0) {
-            setPolicies(data);
-          }
+          const loaded = getPersistedList('policies', Array.isArray(data) ? data : [], INITIAL_POLICIES);
+          setPolicies(loaded);
+        } else {
+          const loaded = getPersistedList('policies', [], INITIAL_POLICIES);
+          setPolicies(loaded);
         }
       } catch (err) {
-        console.warn('Could not fetch policies from API, using default set:', err);
+        const loaded = getPersistedList('policies', [], INITIAL_POLICIES);
+        setPolicies(loaded);
       }
       try {
         const orgRes = await fetch('/api/organization');
@@ -310,23 +320,21 @@ export default function PoliciesPage() {
 
   const handleSavePolicyEdit = async () => {
     if (!editingPolicy) return;
+    const updated = updatePersistedItem('policies', editingPolicy, policies);
+    setPolicies(updated);
+    if (selectedPolicy && selectedPolicy.id === editingPolicy.id) {
+      setSelectedPolicy(editingPolicy);
+    }
+    setEditModalOpen(false);
+    setSuccessMsg(`Policy "${editingPolicy.title}" updated successfully!`);
+    setTimeout(() => setSuccessMsg(null), 3000);
+
     try {
-      const res = await fetch('/api/policies', {
+      await fetch('/api/policies', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editingPolicy),
       });
-      if (res.ok) {
-        setPolicies((prev) =>
-          prev.map((p) => (p.id === editingPolicy.id ? editingPolicy : p))
-        );
-        if (selectedPolicy && selectedPolicy.id === editingPolicy.id) {
-          setSelectedPolicy(editingPolicy);
-        }
-        setEditModalOpen(false);
-        setSuccessMsg(`Policy "${editingPolicy.title}" updated successfully!`);
-        setTimeout(() => setSuccessMsg(null), 3000);
-      }
     } catch (err) {
       console.error('Failed to update policy:', err);
     }
@@ -352,45 +360,48 @@ export default function PoliciesPage() {
 
   const handleSaveCreatePolicy = async () => {
     if (!newPolicy.title.trim()) return;
+    const created: PolicyItem = {
+      id: `p-${Date.now()}`,
+      title: newPolicy.title,
+      framework: newPolicy.framework,
+      status: newPolicy.status,
+      assignee: {
+        name: newPolicy.assigneeName,
+        initials:
+          newPolicy.assigneeInitials ||
+          newPolicy.assigneeName
+            .split(' ')
+            .map((w) => w[0])
+            .join('')
+            .toUpperCase()
+            .slice(0, 2),
+      },
+      approver: newPolicy.approver,
+      department: newPolicy.department,
+      version: newPolicy.version || 'v1.0',
+      recurrence: newPolicy.recurrence,
+      entities: newPolicy.entities,
+      updatedAt: new Date().toISOString().split('T')[0],
+      requirement:
+        newPolicy.requirement ||
+        `Mandatory operational compliance controls governing ${newPolicy.title}.`,
+      content:
+        newPolicy.content ||
+        `# ${newPolicy.title}\n**Organization:** ${orgInfo.name || 'CloudSecure Enterprise'} | **Version:** ${newPolicy.version || 'v1.0'} | **Status:** Draft\n\n## 1. Scope & Mandate\n${newPolicy.requirement || 'Establishes operational security requirements.'}\n\n## 2. Technical Controls\nEnforced across ${newPolicy.entities} under ${newPolicy.framework}.`,
+    };
+
+    const updated = addPersistedItem('policies', created, policies);
+    setPolicies(updated);
+    setCreateModalOpen(false);
+    setSuccessMsg(`New policy "${created.title}" created successfully!`);
+    setTimeout(() => setSuccessMsg(null), 3000);
+
     try {
-      const res = await fetch('/api/policies', {
+      await fetch('/api/policies', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: newPolicy.title,
-          framework: newPolicy.framework,
-          status: newPolicy.status,
-          assignee: {
-            name: newPolicy.assigneeName,
-            initials:
-              newPolicy.assigneeInitials ||
-              newPolicy.assigneeName
-                .split(' ')
-                .map((w) => w[0])
-                .join('')
-                .toUpperCase()
-                .slice(0, 2),
-          },
-          approver: newPolicy.approver,
-          department: newPolicy.department,
-          version: newPolicy.version || 'v1.0',
-          recurrence: newPolicy.recurrence,
-          entities: newPolicy.entities,
-          requirement:
-            newPolicy.requirement ||
-            `Mandatory operational compliance controls governing ${newPolicy.title}.`,
-          content:
-            newPolicy.content ||
-            `# ${newPolicy.title}\n**Organization:** ${orgInfo.name || 'CloudSecure Enterprise'} | **Version:** ${newPolicy.version || 'v1.0'} | **Status:** Draft\n\n## 1. Scope & Mandate\n${newPolicy.requirement || 'Establishes operational security requirements.'}\n\n## 2. Technical Controls\nEnforced across ${newPolicy.entities} under ${newPolicy.framework}.`,
-        }),
+        body: JSON.stringify(created),
       });
-      if (res.ok) {
-        const created = await res.json();
-        setPolicies((prev) => [created, ...prev]);
-        setCreateModalOpen(false);
-        setSuccessMsg(`New policy "${created.title}" created successfully!`);
-        setTimeout(() => setSuccessMsg(null), 3000);
-      }
     } catch (err) {
       console.error('Failed to create policy:', err);
     }
@@ -398,18 +409,18 @@ export default function PoliciesPage() {
 
   const handleDeletePolicy = async (id: string, title: string) => {
     if (!confirm(`Are you sure you want to delete policy "${title}"?`)) return;
+    const updated = removePersistedItem('policies', id, policies);
+    setPolicies(updated);
+    if (selectedPolicy && selectedPolicy.id === id) {
+      setSelectedPolicy(null);
+    }
+    setSuccessMsg(`Policy "${title}" removed successfully!`);
+    setTimeout(() => setSuccessMsg(null), 3000);
+
     try {
-      const res = await fetch(`/api/policies?id=${id}`, {
+      await fetch(`/api/policies?id=${id}`, {
         method: 'DELETE',
       });
-      if (res.ok) {
-        setPolicies((prev) => prev.filter((p) => p.id !== id));
-        if (selectedPolicy && selectedPolicy.id === id) {
-          setSelectedPolicy(null);
-        }
-        setSuccessMsg(`Policy "${title}" removed successfully!`);
-        setTimeout(() => setSuccessMsg(null), 3000);
-      }
     } catch (err) {
       console.error('Failed to delete policy:', err);
     }
@@ -428,14 +439,14 @@ export default function PoliciesPage() {
       content: editingContentText,
       updatedAt: new Date().toISOString().split('T')[0],
     };
-    await persistPolicyUpdate(selectedPolicy.id, { content: editingContentText });
-    setPolicies((prev) =>
-      prev.map((p) => (p.id === selectedPolicy.id ? updated : p))
-    );
+    const nextList = updatePersistedItem('policies', updated, policies);
+    setPolicies(nextList);
     setSelectedPolicy(updated);
     setIsEditingContent(false);
     setSuccessMsg('Document content updated successfully!');
     setTimeout(() => setSuccessMsg(null), 3000);
+
+    await persistPolicyUpdate(selectedPolicy.id, { content: editingContentText });
   };
 
 
@@ -489,13 +500,9 @@ export default function PoliciesPage() {
       },
     };
 
-    setPolicies((prev) =>
-      prev.map((p) =>
-        p.id === policy.id
-          ? { ...p, ...updatedFields }
-          : p
-      )
-    );
+    const updatedItem = { ...policy, ...updatedFields };
+    const nextList = updatePersistedItem('policies', updatedItem, policies);
+    setPolicies(nextList);
 
     if (selectedPolicy && selectedPolicy.id === policy.id) {
       setSelectedPolicy((prev) =>
@@ -626,9 +633,9 @@ export default function PoliciesPage() {
       },
     };
 
-    setPolicies((prev) =>
-      prev.map((p) => (p.id === targetPolicy.id ? { ...p, ...updatedFields } : p))
-    );
+    const updatedItem = { ...targetPolicy, ...updatedFields };
+    const nextList = updatePersistedItem('policies', updatedItem, policies);
+    setPolicies(nextList);
 
     if (selectedPolicy && selectedPolicy.id === targetPolicy.id) {
       setSelectedPolicy((prev) => (prev ? { ...prev, ...updatedFields } : null));
@@ -677,9 +684,9 @@ export default function PoliciesPage() {
       },
     };
 
-    setPolicies((prev) =>
-      prev.map((p) => (p.id === policy.id ? { ...p, ...updatedFields } : p))
-    );
+    const updatedItem = { ...policy, ...updatedFields };
+    const nextList = updatePersistedItem('policies', updatedItem, policies);
+    setPolicies(nextList);
 
     setSelectedPolicy((prev) =>
       prev && prev.id === policy.id ? { ...prev, ...updatedFields } : prev
@@ -693,9 +700,9 @@ export default function PoliciesPage() {
   const handleApprovePolicy = async () => {
     if (!selectedPolicy) return;
     const updatedFields = { status: 'APPROVED' as const };
-    setPolicies((prev) =>
-      prev.map((p) => (p.id === selectedPolicy.id ? { ...p, ...updatedFields } : p))
-    );
+    const updatedItem = { ...selectedPolicy, ...updatedFields };
+    const nextList = updatePersistedItem('policies', updatedItem, policies);
+    setPolicies(nextList);
     setSelectedPolicy((prev) => (prev ? { ...prev, ...updatedFields } : null));
     setWorkflowStep(2);
     setSuccessMsg('Policy approved by steering committee!');
@@ -711,13 +718,9 @@ export default function PoliciesPage() {
       status: 'PUBLISHED' as const,
       updatedAt: new Date().toISOString().split('T')[0],
     };
-    setPolicies((prev) =>
-      prev.map((p) =>
-        p.id === selectedPolicy.id
-          ? { ...p, ...updatedFields }
-          : p
-      )
-    );
+    const updatedItem = { ...selectedPolicy, ...updatedFields };
+    const nextList = updatePersistedItem('policies', updatedItem, policies);
+    setPolicies(nextList);
     setSelectedPolicy((prev) =>
       prev ? { ...prev, ...updatedFields } : null
     );

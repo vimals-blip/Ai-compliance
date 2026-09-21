@@ -5,6 +5,13 @@ import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { StatusBadge } from '../../components/common/StatusBadge';
 import { generateSimplePDF, openPrintableReport, extractCleanTextFromContent } from '../../lib/pdfGenerator';
 import {
+  getPersistedList,
+  addPersistedItem,
+  updatePersistedItem,
+  removePersistedItem,
+  savePersistedList,
+} from '../../lib/clientStore';
+import {
   Paperclip,
   Upload,
   Sparkles,
@@ -164,12 +171,15 @@ Results:
         const res = await fetch('/api/evidence');
         if (res.ok) {
           const data = await res.json();
-          if (Array.isArray(data) && data.length > 0) {
-            setEvidenceList(data);
-          }
+          const loaded = getPersistedList('evidence', Array.isArray(data) ? data : [], evidenceList);
+          setEvidenceList(loaded);
+        } else {
+          const loaded = getPersistedList('evidence', [], evidenceList);
+          setEvidenceList(loaded);
         }
       } catch (err) {
-        console.warn('Could not fetch evidence from API, using default set:', err);
+        const loaded = getPersistedList('evidence', [], evidenceList);
+        setEvidenceList(loaded);
       }
     }
     loadData();
@@ -248,12 +258,12 @@ Results:
           };
         });
 
-        setEvidenceList((prev) => {
-          // Remove previous duplicate evidence for these repositories
-          const newNames = new Set(newEvidences.map((e) => e.name));
-          const filtered = prev.filter((p) => !newNames.has(p.name));
-          return [...newEvidences, ...filtered];
-        });
+        // Remove previous duplicate evidence for these repositories and save to clientStore
+        const newNames = new Set(newEvidences.map((e) => e.name));
+        const filtered = evidenceList.filter((p) => !newNames.has(p.name));
+        const mergedList = [...newEvidences, ...filtered];
+        savePersistedList('evidence', mergedList);
+        setEvidenceList(mergedList);
 
         for (const ev of newEvidences) {
           await persistCreateEvidence(ev);
@@ -281,7 +291,8 @@ Results:
           },
         };
 
-        setEvidenceList((prev) => [newEvidence, ...prev]);
+        const updated = addPersistedItem('evidence', newEvidence, evidenceList);
+        setEvidenceList(updated);
         await persistCreateEvidence(newEvidence);
       }
     } catch (err) {
@@ -365,7 +376,8 @@ Results:
       content: uploadContent || `Policy artifact content for ${uploadName}`,
     };
 
-    setEvidenceList((prev) => [newEv, ...prev]);
+    const updated = addPersistedItem('evidence', newEv, evidenceList);
+    setEvidenceList(updated);
     setShowUploadModal(false);
     setUploadName('');
     setUploadContent('');
@@ -405,9 +417,8 @@ Results:
         ],
       };
 
-      setEvidenceList((prev) =>
-        prev.map((item) => (item.id === ev.id ? { ...item, aiAnalysis: analysisResult, status: 'VALID' } : item))
-      );
+      const updated = updatePersistedItem('evidence', ev.id, { aiAnalysis: analysisResult, status: 'VALID' }, evidenceList);
+      setEvidenceList(updated);
       setSelectedAnalysis(analysisResult);
 
       // Persist analysis to backend JSON store
@@ -425,9 +436,8 @@ Results:
           { document: ev.name, page: 1, text: cleanDoc.slice(0, 150) || 'Evidence verified.' },
         ],
       };
-      setEvidenceList((prev) =>
-        prev.map((item) => (item.id === ev.id ? { ...item, aiAnalysis: fallbackResult, status: 'VALID' } : item))
-      );
+      const updated = updatePersistedItem('evidence', ev.id, { aiAnalysis: fallbackResult, status: 'VALID' }, evidenceList);
+      setEvidenceList(updated);
       setSelectedAnalysis(fallbackResult);
       await persistUpdateEvidence(ev.id, { aiAnalysis: fallbackResult, status: 'VALID' });
     } finally {
@@ -460,7 +470,8 @@ Results:
 
   const handleDeleteEvidence = async (id: string) => {
     if (confirm('Are you sure you want to remove this evidence artifact?')) {
-      setEvidenceList((prev) => prev.filter((item) => item.id !== id));
+      const updated = removePersistedItem('evidence', id, evidenceList);
+      setEvidenceList(updated);
       await persistDeleteEvidence(id);
     }
   };

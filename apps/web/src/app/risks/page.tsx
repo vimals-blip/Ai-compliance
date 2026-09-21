@@ -7,6 +7,12 @@ import { StatusBadge } from '../../components/common/StatusBadge';
 import { api } from '../../lib/api';
 import { generateSimplePDF } from '../../lib/pdfGenerator';
 import {
+  getPersistedList,
+  addPersistedItem,
+  updatePersistedItem,
+  removePersistedItem,
+} from '../../lib/clientStore';
+import {
   ShieldAlert,
   Plus,
   Search,
@@ -21,6 +27,69 @@ import {
   Trash2,
   Edit2,
 } from 'lucide-react';
+
+const DEFAULT_RISKS = [
+  {
+    id: 'r-1',
+    title: 'Unencrypted S3 backup bucket in secondary region',
+    description: 'Backup snapshots stored without customer-managed KMS encryption key.',
+    category: 'Infrastructure',
+    inherentLikelihood: 4,
+    inherentImpact: 5,
+    inherentRiskScore: 20,
+    residualLikelihood: 3,
+    residualImpact: 4,
+    residualRiskScore: 12,
+    treatment: 'MITIGATED',
+    severity: 'HIGH',
+    status: 'OPEN',
+  },
+  {
+    id: 'r-2',
+    title: 'MFA not enforced for legacy staging VPN',
+    description: 'Staging environment VPN gateway allows single-factor password authentication.',
+    category: 'Access Control',
+    inherentLikelihood: 3,
+    inherentImpact: 4,
+    inherentRiskScore: 12,
+    residualLikelihood: 2,
+    residualImpact: 2,
+    residualRiskScore: 4,
+    treatment: 'MITIGATED',
+    severity: 'LOW',
+    status: 'OPEN',
+  },
+  {
+    id: 'r-3',
+    title: 'Quarterly access review missing Q2 sign-off',
+    description: 'IAM user list not signed off by engineering directors for previous quarter.',
+    category: 'Governance',
+    inherentLikelihood: 3,
+    inherentImpact: 2,
+    inherentRiskScore: 6,
+    residualLikelihood: 1,
+    residualImpact: 2,
+    residualRiskScore: 2,
+    treatment: 'ACCEPTED',
+    severity: 'LOW',
+    status: 'MITIGATED',
+  },
+  {
+    id: 'r-4',
+    title: 'Vendor SOC 2 reports expired for 2 sub-processors',
+    description: 'Third-party cloud monitoring vendor report older than 12 months.',
+    category: 'Third-Party Risk',
+    inherentLikelihood: 2,
+    inherentImpact: 2,
+    inherentRiskScore: 4,
+    residualLikelihood: 2,
+    residualImpact: 2,
+    residualRiskScore: 4,
+    treatment: 'OPEN',
+    severity: 'LOW',
+    status: 'OPEN',
+  },
+];
 
 export default function RisksPage() {
   const [risks, setRisks] = useState<any[]>([]);
@@ -58,74 +127,11 @@ export default function RisksPage() {
       }
       try {
         const res = await api.getRisks();
-        if (Array.isArray(res) && res.length > 0) {
-          setRisks(res);
-        } else {
-          throw new Error('Empty');
-        }
+        const loaded = getPersistedList('risks', Array.isArray(res) ? res : [], DEFAULT_RISKS);
+        setRisks(loaded);
       } catch (e) {
-        setRisks([
-          {
-            id: 'r-1',
-            title: 'Unencrypted S3 backup bucket in secondary region',
-            description: 'Backup snapshots stored without customer-managed KMS encryption key.',
-            category: 'Infrastructure',
-            inherentLikelihood: 4,
-            inherentImpact: 5,
-            inherentRiskScore: 20,
-            residualLikelihood: 3,
-            residualImpact: 4,
-            residualRiskScore: 12,
-            treatment: 'MITIGATED',
-            severity: 'HIGH',
-            status: 'OPEN',
-          },
-          {
-            id: 'r-2',
-            title: 'MFA not enforced for legacy staging VPN',
-            description: 'Staging environment VPN gateway allows single-factor password authentication.',
-            category: 'Access Control',
-            inherentLikelihood: 3,
-            inherentImpact: 4,
-            inherentRiskScore: 12,
-            residualLikelihood: 2,
-            residualImpact: 2,
-            residualRiskScore: 4,
-            treatment: 'MITIGATED',
-            severity: 'LOW',
-            status: 'OPEN',
-          },
-          {
-            id: 'r-3',
-            title: 'Quarterly access review missing Q2 sign-off',
-            description: 'IAM user list not signed off by engineering directors for previous quarter.',
-            category: 'Governance',
-            inherentLikelihood: 3,
-            inherentImpact: 2,
-            inherentRiskScore: 6,
-            residualLikelihood: 1,
-            residualImpact: 2,
-            residualRiskScore: 2,
-            treatment: 'ACCEPTED',
-            severity: 'LOW',
-            status: 'MITIGATED',
-          },
-          {
-            id: 'r-4',
-            title: 'Vendor SOC 2 reports expired for 2 sub-processors',
-            description: 'Third-party cloud monitoring vendor report older than 12 months.',
-            category: 'Third-Party Risk',
-            inherentLikelihood: 2,
-            inherentImpact: 2,
-            inherentRiskScore: 4,
-            residualLikelihood: 2,
-            residualImpact: 2,
-            residualRiskScore: 4,
-            treatment: 'OPEN',
-            severity: 'LOW',
-            status: 'OPEN',
-          },
-        ]);
+        const loaded = getPersistedList('risks', [], DEFAULT_RISKS);
+        setRisks(loaded);
       }
     }
     load();
@@ -148,14 +154,14 @@ export default function RisksPage() {
       status: 'OPEN',
     };
 
+    const updated = addPersistedItem('risks', created, risks);
+    setRisks(updated);
+    setShowAddModal(false);
+
     try {
       await api.createRisk(created);
-    } catch {
-      // fallback
-    }
+    } catch {}
 
-    setRisks([created, ...risks]);
-    setShowAddModal(false);
     setNewRisk({
       title: '',
       description: '',
@@ -179,6 +185,10 @@ export default function RisksPage() {
     if (!selectedRisk) return;
     setIsSavingEdit(true);
 
+    const updatedRisk = { ...selectedRisk, treatment: editTreatment, status: editStatus };
+    const updated = updatePersistedItem('risks', updatedRisk, risks);
+    setRisks(updated);
+
     try {
       await fetch('/api/risks', {
         method: 'PATCH',
@@ -191,12 +201,6 @@ export default function RisksPage() {
       });
     } catch {}
 
-    setRisks((prev) =>
-      prev.map((r) =>
-        r.id === selectedRisk.id ? { ...r, treatment: editTreatment, status: editStatus } : r
-      )
-    );
-
     setIsSavingEdit(false);
     setEditSaved(true);
     setTimeout(() => {
@@ -207,15 +211,16 @@ export default function RisksPage() {
 
   const handleDeleteRisk = async (id: string, title: string) => {
     if (!confirm(`Are you sure you want to delete risk "${title}"?`)) return;
+    const updated = removePersistedItem('risks', id, risks);
+    setRisks(updated);
+    if (selectedRisk && selectedRisk.id === id) {
+      setSelectedRisk(null);
+    }
     try {
       await fetch(`/api/risks?id=${encodeURIComponent(id)}`, {
         method: 'DELETE',
       });
     } catch {}
-    setRisks((prev) => prev.filter((r) => r.id !== id));
-    if (selectedRisk && selectedRisk.id === id) {
-      setSelectedRisk(null);
-    }
   };
 
 
