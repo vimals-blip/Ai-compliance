@@ -1,0 +1,56 @@
+{
+  "framework": "SOC 2 Type II",
+  "code": "SOC2",
+  "version": "2022",
+  "controls": [
+    {
+      "code": "CC6.1",
+      "title": "Logical Access Security & Identity Management",
+      "description": "The entity implements logical access security software, infrastructure, and architectures over protected information assets to protect them from security events.",
+      "category": "Access Control",
+      "maturityLevel": 4
+    },
+    {
+      "code": "CC6.2",
+      "title": "User Registration & Access Lifecycle",
+      "description": "Prior to issuing system credentials and granting system access, the entity registers and authorizes new internal and external users whose access is administered by the entity.",
+      "category": "Access Control",
+      "maturityLevel": 3
+    },
+    {
+      "code": "CC6.3",
+      "title": "Revocation of Access Permissions",
+      "description": "The entity revokes system access when user employment or contract relationships terminate or when access is no longer required.",
+      "category": "Access Control",
+      "maturityLevel": 4
+    },
+    {
+      "code": "CC6.6",
+      "title": "Boundary Protection & Network Segmentation",
+      "description": "The entity implements logical boundaries and network segmentation controls to prevent unauthorized perimeter access.",
+      "category": "Network Security",
+      "maturityLevel": 4
+    },
+    {
+      "code": "CC6.7",
+      "title": "Transmission of Protected Data",
+      "description": "The entity restricts the transmission, movement, and removal of information to authorized internal and external users and processes.",
+      "category": "Data Protection",
+      "maturityLevel": 4
+    },
+    {
+      "code": "CC7.2",
+      "title": "Security Incident Detection & Monitoring",
+      "description": "The entity monitors system components and the operation of controls to detect anomalies and unauthorized actions.",
+      "category": "Incident Management",
+      "maturityLevel": 3
+    },
+    {
+      "code": "CC8.1",
+      "title": "Change Management & Version Control",
+      "description": "The entity authorizes, designs, develops or acquires, configures, tests, approves, and implements changes to infrastructure, data, software, and procedures.",
+      "category": "Change Management",
+      "maturityLevel": 4
+    }
+  ]
+}

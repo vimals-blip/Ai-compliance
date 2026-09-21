@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI-Compliance Platform: Product Architecture & How It Works</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({ startOnLoad: true, theme: 'neutral' });</script>
+  <style>
+    :root {
+      --primary: #059669;
+      --primary-dark: #047857;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --bg-slate: #f8fafc;
+      --border: #e2e8f0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      color: var(--text);
+      background-color: #ffffff;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+    .header {
+      border-bottom: 3px solid var(--primary);
+      padding-bottom: 24px;
+      margin-bottom: 40px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      background-color: #ecfdf5;
+      color: var(--primary-dark);
+      border: 1px solid #a7f3d0;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    h1 {
+      font-size: 32px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0 0 8px;
+    }
+    .meta {
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+    h2 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #0f172a;
+      margin-top: 48px;
+      margin-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+    h3 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1e293b;
+      margin-top: 24px;
+      margin-bottom: 8px;
+    }
+    p, li {
+      font-size: 15px;
+      color: #334155;
+    }
+    .diagram-card {
+      background-color: var(--bg-slate);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      margin: 24px 0;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      overflow-x: auto;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin: 24px 0;
+    }
+    .card {
+      background-color: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .card h4 {
+      margin: 0 0 6px;
+      font-size: 14px;
+      color: var(--primary-dark);
+    }
+    .card p {
+      margin: 0;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      font-size: 14px;
+    }
+    th, td {
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      text-align: left;
+    }
+    th {
+      background-color: var(--bg-slate);
+      font-weight: 700;
+      color: #1e293b;
+    }
+    .print-btn {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+      transition: background 0.2s;
+    }
+    .print-btn:hover {
+      background-color: var(--primary-dark);
+    }
+    @media print {
+      .print-btn { display: none; }
+      body { padding: 0; }
+      .container { max-width: 100%; padding: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <span class="badge">Official Product Guide</span>
+      <h1>AI-Compliance Platform: Product Architecture & How It Works</h1>
+      <div class="meta">
+        <strong>Version:</strong> 1.0 &bull; <strong>Scope:</strong> SOC 2 Type II, ISO/IEC 27001:2022, NIST CSF v2.0, HIPAA, GDPR
+      </div>
+    </div>
+
+    <h2>1. Executive Summary</h2>
+    <p>
+      <strong>AI-Compliance</strong> is an autonomous Governance, Risk, and Compliance (GRC) platform. Traditional audits require months of consultant meetings and screenshot gathering. AI-Compliance automates this end-to-end:
+    </p>
+    <div class="grid">
+      <div class="card">
+        <h4>🔒 100% Sovereign & Local AI</h4>
+        <p>Fine-tuned Meta Llama 3.1 8B runs on your own infrastructure. No third-party API dependencies or data leakage.</p>
+      </div>
+      <div class="card">
+        <h4>📡 Automated Telemetry</h4>
+        <p>Direct API collectors harvest live configurations from AWS, GitHub, Google Workspace, and Slack continuously.</p>
+      </div>
+      <div class="card">
+        <h4>🧪 153 Continuous Tests</h4>
+        <p>Monitors posture 24/7 with 1-click AI Terraform and AWS CLI auto-remediation scripts.</p>
+      </div>
+      <div class="card">
+        <h4>📦 1-Click Auditor ZIP</h4>
+        <p>Packages 10 policies, 6 evidence JSONs, MANIFEST, and README into a single downloadable package.</p>
+      </div>
+    </div>
+
+    <h2>2. Product Use Case Diagram</h2>
+    <div class="diagram-card">
+      <div class="mermaid">
+flowchart LR
+    ADMIN["👤 Compliance Officer / GRC Lead"]
+    ENG["👨‍💻 DevOps & Cloud Engineer"]
+    AUDITOR["🕵️‍♂️ External CPA Auditor"]
+    AI["🤖 Autonomous AI Engine (Llama 3.1)"]
+
+    subgraph Product["🛡️ AI-Compliance Platform"]
+        subgraph Mod_Setup["1. Workspace Setup"]
+            UC_Scope["Select Framework Scope\n(SOC 2, ISO 27001, NIST, HIPAA)"]
+            UC_Connect["Connect Cloud Integrations\n(AWS, GitHub, Google, Slack)"]
+        end
+
+        subgraph Mod_Policies["2. Policy Center"]
+            UC_GenPol["AI-Generated Compliance Policies\n(10 Core Policies)"]
+            UC_Approve["3-Step Workflow & Attestation\n(Draft -> Approve -> Publish)"]
+            UC_PDF["Export Official Signed PDF"]
+        end
+
+        subgraph Mod_Testing["3. Continuous Monitoring"]
+            UC_Tests["153 Continuous Automated Tests\n(Pass / Fail / Warn Telemetry)"]
+            UC_Remediate["1-Click AI Auto-Remediation\n(Terraform & AWS CLI Fixes)"]
+            UC_Risk["Enterprise Risk Register\n(Inherent vs Residual Scoring)"]
+        end
+
+        subgraph Mod_Evidence["4. Evidence Collection"]
+            UC_Collect["Automated Real-Time Telemetry"]
+            UC_RAG["RAG Document Verification\n(pgvector Semantic Analysis)"]
+        end
+
+        subgraph Mod_Audit["5. Audit Attestation & Export"]
+            UC_Criteria["Common Criteria Tracking (CC1.0 - CC6.0)"]
+            UC_Dossier["Executive Audit Readiness Dossier"]
+            UC_ExportZip["Download Auditor Package (.ZIP)\n(18 Bundled Policies & Artifacts)"]
+        end
+    end
+
+    ADMIN --> UC_Scope
+    ADMIN --> UC_Connect
+    ADMIN --> UC_Approve
+    ADMIN --> UC_PDF
+    ADMIN --> UC_Risk
+    ADMIN --> UC_Dossier
+    ADMIN --> UC_ExportZip
+
+    ENG --> UC_Connect
+    ENG --> UC_Tests
+    ENG --> UC_Remediate
+    ENG --> UC_Risk
+
+    AUDITOR --> UC_Approve
+    AUDITOR --> UC_Criteria
+    AUDITOR --> UC_Dossier
+    AUDITOR --> UC_ExportZip
+
+    AI -.->|Synthesizes| UC_GenPol
+    AI -.->|Executes Hourly| UC_Tests
+    AI -.->|Generates Code Fixes| UC_Remediate
+    AI -.->|Harvests Telemetry| UC_Collect
+    AI -.->|Evaluates Documents| UC_RAG
+    AI -.->|Bundles 18-File Archive| UC_ExportZip
+      </div>
+    </div>
+
+    <h2>3. End-to-End Product Flowchart</h2>
+    <div class="diagram-card">
+      <div class="mermaid">
+flowchart TD
+    subgraph P1["Phase 1: Quick Onboarding (5 Minutes)"]
+        A1["User Enters Organization Details\n(Company Name, Cloud, Identity)"] --> A2["Select Regulatory Frameworks\n(SOC 2, ISO 27001, NIST CSF)"]
+        A2 --> A3["Autonomous AI Engine Activates\n(Fine-Tuned Llama 3.1 8B Model)"]
+        A3 --> A4["AI Generates 10 Compliance Policies\n(Tailored to Infrastructure)"]
+    end
+
+    subgraph P2["Phase 2: Telemetry & Automated Evidence"]
+        B1["Connect Integrations via Read-Only APIs\n(AWS IAM/S3, GitHub, Google, Slack)"] --> B2["Autonomous Background Scanners\n(Hourly & On-Demand Telemetry)"]
+        B2 --> B3["153 Continuous Automated Security Tests\n(S3 Encryption, IAM MFA, Branch Protection, 2FA)"]
+    end
+
+    subgraph P3["Phase 3: AI Gap Analysis & Remediation"]
+        C1{"Test Result Evaluation"}
+        C1 -->|PASS| C2["Store Cryptographic Evidence\n(SHA-256 Digest & Timestamp)"]
+        C1 -->|FAIL / WARN| C3["Alert in Compliance Dashboard"]
+        C3 --> C4["Click 'Resolve with AI'\n(Instant Terraform Script & AWS CLI Commands)"]
+        C4 --> C5["Engineer Deploys Fix -> Retest Passes"]
+        C5 --> C2
+    end
+
+    subgraph P4["Phase 4: Policy & Evidence Review"]
+        D1["Review Official Policy Attachments\n(Formatted PDF Document Cards)"] --> D2["Executive Document Viewer\n(Digital Signatures & Attestation Seals)"]
+        D2 --> D3["Evidence Room Verification\n(RAG Analysis with Control Citations)"]
+    end
+
+    subgraph P5["Phase 5: Auditor Examination & 1-Click Export"]
+        E1["Auditor Inspects Audit Center\n(Common Criteria CC1.0 - CC6.0)"] --> E2["1-Click 'Download Auditor Package'"]
+        E2 --> E3["System Streams Binary .ZIP Archive\n(10 Policies + 6 Signed JSONs + MANIFEST + README)"]
+        E3 --> E4["Generate Executive Audit Dossier (.PDF)"]
+        E4 --> E5["CPA Signs Off Clean Attestation"]
+    end
+
+    P1 --> P2
+    P2 --> P3
+    P3 --> P4
+    P4 --> P5
+      </div>
+    </div>
+
+    <h2>4. Step-by-Step User Journey</h2>
+    <h3>Step 1: 5-Minute Setup & Automated Policy Authoring</h3>
+    <p>Users launch the onboarding wizard at <code>/onboarding</code>. The fine-tuned Llama 3.1 8B model instantly synthesizes 10 tailored security policies formatted as official PDF document cards with corporate letterheads and digital sign-off blocks.</p>
+
+    <h3>Step 2: Zero-Touch Cloud Telemetry Ingestion</h3>
+    <p>Connect AWS, GitHub, Google Workspace, and Slack via read-only APIs. The platform continuously monitors S3 encryption, IAM MFA enforcement, branch protection, user directory 2FA, and message retention.</p>
+
+    <h3>Step 3: Continuous Automated Testing (153 Checks)</h3>
+    <p>Continuous tests run 24/7. When a check fails, clicking <strong>"Resolve with AI"</strong> delivers instant copy-paste Terraform scripts and AWS CLI commands to remediate the gap immediately.</p>
+
+    <h3>Step 4: Auditor Attestation & 1-Click Package Export</h3>
+    <p>CPA auditors review Common Criteria (<code>CC1.0</code> - <code>CC6.0</code>) in the Audit Center. One click downloads the complete 18-file ZIP evidence package and an executive PDF attestation dossier.</p>
+
+    <h2>5. System Architecture Table</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Layer</th>
+          <th>Technology</th>
+          <th>Function</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Frontend Web App</strong></td>
+          <td>Next.js 15, React 19, Tailwind CSS</td>
+          <td>Scrut-style cockpit, interactive terminal drawers, and PDF document previewer.</td>
+        </tr>
+        <tr>
+          <td><strong>Enterprise API</strong></td>
+          <td>NestJS, TypeScript, Prisma ORM</td>
+          <td>Business rules, measures mapping (test-once-comply-many), and organization controls.</td>
+        </tr>
+        <tr>
+          <td><strong>AI & Telemetry Service</strong></td>
+          <td>Python 3.11+, FastAPI (Port 8000)</td>
+          <td>Local LLM inference, RAG gap analysis, cloud collectors, and binary ZIP builder.</td>
+        </tr>
+        <tr>
+          <td><strong>Open-Source LLM</strong></td>
+          <td>Meta Llama 3.1 8B Instruct (Fine-Tuned GRC)</td>
+          <td>Host-local, air-gapped policy authoring and remediation scripts.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <button class="print-btn" onclick="window.print()">Print / Save as PDF</button>
+  </div>
+</body>
+</html>

@@ -1,0 +1,49 @@
+{
+  "framework": "NIST Cybersecurity Framework",
+  "code": "NIST-CSF",
+  "version": "v2.0",
+  "controls": [
+    {
+      "code": "GV.OC-01",
+      "title": "Organizational Context & Mission Alignment",
+      "description": "The organizational mission is understood and informs cybersecurity risk management decisions.",
+      "category": "Govern",
+      "maturityLevel": 4
+    },
+    {
+      "code": "ID.AM-01",
+      "title": "Physical and Virtual Asset Inventory",
+      "description": "Inventories of hardware and virtual devices managed by the organization are maintained.",
+      "category": "Identify",
+      "maturityLevel": 3
+    },
+    {
+      "code": "PR.AA-01",
+      "title": "Identity Management and Authentication",
+      "description": "Identities and credentials for authorized users, services, and hardware are managed.",
+      "category": "Protect",
+      "maturityLevel": 4
+    },
+    {
+      "code": "PR.DS-01",
+      "title": "Data-at-Rest Confidentiality and Integrity",
+      "description": "Data at rest are protected according to the organization's risk strategy.",
+      "category": "Protect",
+      "maturityLevel": 4
+    },
+    {
+      "code": "DE.CM-01",
+      "title": "Network and Environmental Monitoring",
+      "description": "Networks and environments are monitored to detect potential cybersecurity events.",
+      "category": "Detect",
+      "maturityLevel": 3
+    },
+    {
+      "code": "RS.MA-01",
+      "title": "Incident Response Plan Execution",
+      "description": "The incident response plan is executed during or after an incident.",
+      "category": "Respond",
+      "maturityLevel": 3
+    }
+  ]
+}

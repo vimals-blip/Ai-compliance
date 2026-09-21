@@ -1,0 +1,49 @@
+{
+  "framework": "ISO/IEC 27001:2022",
+  "code": "ISO27001",
+  "version": "2022",
+  "controls": [
+    {
+      "code": "A.5.1",
+      "title": "Policies for Information Security",
+      "description": "Information security policy and topic-specific policies shall be defined, approved by management, published, communicated to and acknowledged by relevant personnel.",
+      "category": "Organizational Controls",
+      "maturityLevel": 4
+    },
+    {
+      "code": "A.8.1",
+      "title": "User Endpoint Devices",
+      "description": "Information stored on, processed by or accessible via user endpoint devices shall be protected.",
+      "category": "Technological Controls",
+      "maturityLevel": 3
+    },
+    {
+      "code": "A.8.2",
+      "title": "Privileged Access Rights",
+      "description": "The allocation and use of privileged access rights shall be restricted and managed.",
+      "category": "Technological Controls",
+      "maturityLevel": 4
+    },
+    {
+      "code": "A.8.9",
+      "title": "Configuration Management",
+      "description": "Configurations, including security configurations, of hardware, software, services and networks shall be established, documented, implemented, monitored and reviewed.",
+      "category": "Technological Controls",
+      "maturityLevel": 3
+    },
+    {
+      "code": "A.8.20",
+      "title": "Network Security",
+      "description": "Networks and network devices shall be secured, managed and controlled to protect information in systems and applications.",
+      "category": "Technological Controls",
+      "maturityLevel": 4
+    },
+    {
+      "code": "A.8.24",
+      "title": "Use of Cryptography",
+      "description": "Rules for the effective use of cryptography, including cryptographic key management, shall be defined and implemented.",
+      "category": "Technological Controls",
+      "maturityLevel": 4
+    }
+  ]
+}

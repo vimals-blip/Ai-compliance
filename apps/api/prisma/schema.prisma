@@ -1,0 +1,578 @@
+// Prisma Schema for AI-Compliance Platform
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum RoleType {
+  ADMIN
+  COMPLIANCE_MANAGER
+  AUDITOR
+  CONTRIBUTOR
+  VIEWER
+}
+
+enum ControlStatus {
+  EFFECTIVE
+  ISSUE
+  NOT_OPERATING
+  NOT_APPLICABLE
+  NOT_TESTED
+}
+
+enum EvidenceStatus {
+  VALID
+  EXPIRED
+  UNDER_REVIEW
+  REJECTED
+  PENDING_REVIEW
+}
+
+enum SeverityLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum RiskStatus {
+  OPEN
+  MITIGATED
+  ACCEPTED
+  CLOSED
+}
+
+enum RiskTreatment {
+  MITIGATED
+  ACCEPTED
+  AVOIDED
+  TRANSFERRED
+}
+
+enum ControlMaturityLevel {
+  NONE
+  INITIAL
+  MANAGED
+  DEFINED
+  QUANTITATIVELY_MANAGED
+  OPTIMIZING
+}
+
+enum AuditStatus {
+  PLANNED
+  IN_PROGRESS
+  REVIEW
+  COMPLETED
+  ARCHIVED
+}
+
+enum FindingStatus {
+  OPEN
+  IN_PROGRESS
+  CLOSED
+  ACCEPTED
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum AIAnalysisStatus {
+  COMPLIANT
+  PARTIAL
+  NON_COMPLIANT
+  INSUFFICIENT_EVIDENCE
+}
+
+enum AIReviewStatus {
+  PENDING_HUMAN_REVIEW
+  ACCEPTED
+  REJECTED
+  MODIFIED
+}
+
+enum AIJobType {
+  DOCUMENT_PROCESSING
+  EVIDENCE_ANALYSIS
+  EMBEDDING_GENERATION
+  COMPLIANCE_ANALYSIS
+}
+
+enum AIJobStatus {
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model Organization {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users               User[]
+  frameworks          Framework[]
+  evidence            Evidence[]
+  risks               Risk[]
+  audits              Audit[]
+  findings            Finding[]
+  tasks               Task[]
+  complianceSnapshots ComplianceSnapshot[]
+  aiAnalyses          AIAnalysis[]
+  aiJobs              AIJob[]
+  statementsOfApp     StatementOfApplicability[]
+  measures            Measure[]
+
+  @@map("organizations")
+}
+
+model User {
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String   @db.Uuid
+  email          String   @unique
+  passwordHash   String
+  name           String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userRoles        UserRole[]
+  ownedRisks       Risk[]       @relation("RiskOwner")
+  uploadedEvidence Evidence[]   @relation("EvidenceUploader")
+  assignedFindings Finding[]    @relation("FindingAssignee")
+  assignedTasks    Task[]       @relation("TaskAssignee")
+  auditsLed        Audit[]      @relation("AuditLead")
+
+  @@index([organizationId])
+  @@map("users")
+}
+
+model Role {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        RoleType @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userRoles UserRole[]
+
+  @@map("roles")
+}
+
+model UserRole {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  roleId    String   @db.Uuid
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+  @@index([userId])
+  @@index([roleId])
+  @@map("user_roles")
+}
+
+model Framework {
+  id                 String    @id @default(uuid()) @db.Uuid
+  organizationId     String    @db.Uuid
+  name               String
+  code               String // e.g. SOC2, ISO27001, NIST-CSF
+  version            String
+  description        String?
+  source             String?
+  sourceVersion      String?
+  retrievedAt        DateTime?
+  licenseOrUsageNote String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  controls     Control[]
+  audits       Audit[]
+
+  @@unique([organizationId, code, version])
+  @@index([organizationId])
+  @@index([code])
+  @@map("frameworks")
+}
+
+model Control {
+  id                          String               @id @default(uuid()) @db.Uuid
+  frameworkId                 String               @db.Uuid
+  code                        String // e.g. CC6.1, A.9.1.1
+  title                       String
+  description                 String
+  category                    String
+  status                      ControlStatus        @default(NOT_TESTED)
+  maturityLevel               ControlMaturityLevel @default(INITIAL)
+  isApplicable                Boolean              @default(true)
+  regulatory                  Boolean              @default(false)
+  contractual                 Boolean              @default(false)
+  bestPractice                Boolean              @default(false)
+  notImplementedJustification String?
+  commonControlCode           String? // Shared cross-framework abstraction key
+  createdAt                   DateTime             @default(now())
+  updatedAt                   DateTime             @updatedAt
+
+  framework               Framework                @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+  evidenceMappings        ControlEvidence[]
+  measureMappings         ControlMeasure[]
+  applicabilityStatements ApplicabilityStatement[]
+  risks                   Risk[]
+  findings                Finding[]
+  aiAnalyses              AIAnalysis[]
+  tasks                   Task[]
+
+  @@unique([frameworkId, code])
+  @@index([frameworkId])
+  @@index([status])
+  @@index([category])
+  @@index([commonControlCode])
+  @@map("controls")
+}
+
+model Measure {
+  id             String        @id @default(uuid()) @db.Uuid
+  organizationId String        @db.Uuid
+  name           String
+  description    String?
+  status         ControlStatus @default(NOT_TESTED)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  controls     ControlMeasure[]
+  evidence     MeasureEvidence[]
+
+  @@index([organizationId])
+  @@map("measures")
+}
+
+model ControlMeasure {
+  id        String   @id @default(uuid()) @db.Uuid
+  controlId String   @db.Uuid
+  measureId String   @db.Uuid
+  createdAt DateTime @default(now())
+
+  control Control @relation(fields: [controlId], references: [id], onDelete: Cascade)
+  measure Measure @relation(fields: [measureId], references: [id], onDelete: Cascade)
+
+  @@unique([controlId, measureId])
+  @@index([controlId])
+  @@index([measureId])
+  @@map("control_measures")
+}
+
+model Evidence {
+  id             String         @id @default(uuid()) @db.Uuid
+  organizationId String         @db.Uuid
+  name           String
+  description    String?
+  type           String // POLICY, CONFIG, LOG, REPORT, SCREENSHOT
+  storageKey     String // MinIO/S3 object key
+  mimeType       String
+  fileSize       Int
+  status         EvidenceStatus @default(PENDING_REVIEW)
+  collectedAt    DateTime       @default(now())
+  expiresAt      DateTime?
+  uploadedById   String         @db.Uuid
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  organization    Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  uploadedBy      User              @relation("EvidenceUploader", fields: [uploadedById], references: [id])
+  controlMappings ControlEvidence[]
+  measureMappings MeasureEvidence[]
+  aiAnalyses      AIAnalysis[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("evidence")
+}
+
+model ControlEvidence {
+  id         String   @id @default(uuid()) @db.Uuid
+  controlId  String   @db.Uuid
+  evidenceId String   @db.Uuid
+  assignedAt DateTime @default(now())
+  notes      String?
+
+  control  Control  @relation(fields: [controlId], references: [id], onDelete: Cascade)
+  evidence Evidence @relation(fields: [evidenceId], references: [id], onDelete: Cascade)
+
+  @@unique([controlId, evidenceId])
+  @@index([controlId])
+  @@index([evidenceId])
+  @@map("control_evidence")
+}
+
+model MeasureEvidence {
+  id         String   @id @default(uuid()) @db.Uuid
+  measureId  String   @db.Uuid
+  evidenceId String   @db.Uuid
+  assignedAt DateTime @default(now())
+  notes      String?
+
+  measure  Measure  @relation(fields: [measureId], references: [id], onDelete: Cascade)
+  evidence Evidence @relation(fields: [evidenceId], references: [id], onDelete: Cascade)
+
+  @@unique([measureId, evidenceId])
+  @@index([measureId])
+  @@index([evidenceId])
+  @@map("measure_evidence")
+}
+
+model Risk {
+  id             String  @id @default(uuid()) @db.Uuid
+  organizationId String  @db.Uuid
+  controlId      String? @db.Uuid
+  title          String
+  description    String
+  category       String
+
+  // Inherent risk
+  inherentLikelihood Int // Scale 1..5
+  inherentImpact     Int // Scale 1..5
+  inherentRiskScore  Int // Calculated deterministically
+
+  // Residual risk
+  residualLikelihood Int // Scale 1..5
+  residualImpact     Int // Scale 1..5
+  residualRiskScore  Int // Calculated deterministically
+
+  severity  SeverityLevel // Derived from score
+  status    RiskStatus     @default(OPEN)
+  treatment RiskTreatment?
+
+  ownerId   String?  @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  control      Control?     @relation(fields: [controlId], references: [id], onDelete: SetNull)
+  owner        User?        @relation("RiskOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([controlId])
+  @@index([status])
+  @@index([severity])
+  @@index([createdAt])
+  @@map("risks")
+}
+
+model StatementOfApplicability {
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String   @db.Uuid
+  name           String
+  snapshotDate   DateTime @default(now())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization            Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  applicabilityStatements ApplicabilityStatement[]
+
+  @@index([organizationId])
+  @@map("statements_of_applicability")
+}
+
+model ApplicabilityStatement {
+  id                         String   @id @default(uuid()) @db.Uuid
+  statementOfApplicabilityId String   @db.Uuid
+  controlId                  String   @db.Uuid
+  isApplicable               Boolean
+  justification              String?
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+
+  statementOfApplicability StatementOfApplicability @relation(fields: [statementOfApplicabilityId], references: [id], onDelete: Cascade)
+  control                  Control                  @relation(fields: [controlId], references: [id], onDelete: Restrict)
+
+  @@unique([statementOfApplicabilityId, controlId])
+  @@index([statementOfApplicabilityId])
+  @@index([controlId])
+  @@map("applicability_statements")
+}
+
+model Audit {
+  id             String      @id @default(uuid()) @db.Uuid
+  organizationId String      @db.Uuid
+  frameworkId    String      @db.Uuid
+  title          String
+  description    String?
+  status         AuditStatus @default(PLANNED)
+  startDate      DateTime
+  endDate        DateTime?
+  leadAuditorId  String?     @db.Uuid
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  framework    Framework    @relation(fields: [frameworkId], references: [id], onDelete: Restrict)
+  leadAuditor  User?        @relation("AuditLead", fields: [leadAuditorId], references: [id], onDelete: SetNull)
+  findings     Finding[]
+
+  @@index([organizationId])
+  @@index([frameworkId])
+  @@index([status])
+  @@map("audits")
+}
+
+model Finding {
+  id              String        @id @default(uuid()) @db.Uuid
+  organizationId  String        @db.Uuid
+  auditId         String        @db.Uuid
+  controlId       String?       @db.Uuid
+  title           String
+  description     String
+  severity        SeverityLevel
+  status          FindingStatus @default(OPEN)
+  assignedToId    String?       @db.Uuid
+  identifiedAt    DateTime      @default(now())
+  dueDate         DateTime?
+  resolutionNotes String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  audit        Audit        @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  control      Control?     @relation(fields: [controlId], references: [id], onDelete: SetNull)
+  assignedTo   User?        @relation("FindingAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  tasks        Task[]
+
+  @@index([organizationId])
+  @@index([auditId])
+  @@index([controlId])
+  @@index([status])
+  @@index([severity])
+  @@index([createdAt])
+  @@map("findings")
+}
+
+model Task {
+  id             String        @id @default(uuid()) @db.Uuid
+  organizationId String        @db.Uuid
+  findingId      String?       @db.Uuid
+  controlId      String?       @db.Uuid
+  title          String
+  description    String?
+  priority       SeverityLevel @default(MEDIUM)
+  status         TaskStatus    @default(TODO)
+  assignedToId   String?       @db.Uuid
+  dueAt          DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  finding      Finding?     @relation(fields: [findingId], references: [id], onDelete: SetNull)
+  control      Control?     @relation(fields: [controlId], references: [id], onDelete: SetNull)
+  assignedTo   User?        @relation("TaskAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([findingId])
+  @@index([controlId])
+  @@index([status])
+  @@map("tasks")
+}
+
+model ComplianceSnapshot {
+  id                 String   @id @default(uuid()) @db.Uuid
+  organizationId     String   @db.Uuid
+  snapshotMonth      String // Format: YYYY-MM
+  score              Float
+  effectiveControls  Int
+  applicableControls Int
+  openRisks          Int
+  auditFindings      Int
+  createdAt          DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, snapshotMonth])
+  @@index([organizationId])
+  @@index([snapshotMonth])
+  @@map("compliance_snapshots")
+}
+
+model AIAnalysis {
+  id             String           @id @default(uuid()) @db.Uuid
+  organizationId String           @db.Uuid
+  evidenceId     String           @db.Uuid
+  controlId      String           @db.Uuid
+  status         AIAnalysisStatus
+  confidence     Float
+  riskLevel      SeverityLevel
+  gaps           Json // List of identified gaps
+  summary        String
+  model          String
+  modelVersion   String?
+  promptVersion  String?
+  citations      Json // List of citations with doc, page, snippet
+  reviewStatus   AIReviewStatus   @default(PENDING_HUMAN_REVIEW)
+  reviewedById   String?          @db.Uuid
+  reviewedAt     DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  organization    Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  evidence        Evidence           @relation(fields: [evidenceId], references: [id], onDelete: Cascade)
+  control         Control            @relation(fields: [controlId], references: [id], onDelete: Cascade)
+  recommendations AIRecommendation[]
+
+  @@index([organizationId])
+  @@index([evidenceId])
+  @@index([controlId])
+  @@index([reviewStatus])
+  @@index([createdAt])
+  @@map("ai_analyses")
+}
+
+model AIRecommendation {
+  id              String        @id @default(uuid()) @db.Uuid
+  analysisId      String        @db.Uuid
+  title           String
+  description     String
+  priority        SeverityLevel @default(MEDIUM)
+  suggestedAction String?
+  ownerRole       String?
+  dueInDays       Int?
+  createdAt       DateTime      @default(now())
+
+  analysis AIAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+
+  @@index([analysisId])
+  @@map("ai_recommendations")
+}
+
+model AIJob {
+  id             String      @id @default(uuid()) @db.Uuid
+  organizationId String      @db.Uuid
+  jobType        AIJobType
+  status         AIJobStatus @default(QUEUED)
+  payload        Json
+  result         Json?
+  errorMessage   String?
+  idempotencyKey String?     @unique
+  retries        Int         @default(0)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([jobType])
+  @@index([idempotencyKey])
+  @@map("ai_jobs")
+}

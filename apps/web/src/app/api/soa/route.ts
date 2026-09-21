@@ -1,0 +1,73 @@
+import { NextResponse } from 'next/server';
+import { getStoredData, saveStoredData } from '../../../lib/serverStore';
+
+const INITIAL_SOA = [
+  {
+    id: 'soa-1',
+    controlNumber: 'A.5.1',
+    controlTitle: 'Policies for Information Security',
+    applicable: true,
+    justification: 'Mandatory baseline requirement to define security objectives across all corporate operations.',
+    implementationStatus: 'IMPLEMENTED',
+    implementedBy: 'Automated AI Policy Engine & Infosec Committee',
+  },
+  {
+    id: 'soa-2',
+    controlNumber: 'A.8.1',
+    controlTitle: 'User Endpoint Devices',
+    applicable: true,
+    justification: 'Remote and hybrid employees handle company credentials and code.',
+    implementationStatus: 'IMPLEMENTED',
+    implementedBy: 'MDM agent with mandatory disk encryption (FileVault/BitLocker)',
+  },
+  {
+    id: 'soa-3',
+    controlNumber: 'A.8.2',
+    controlTitle: 'Privileged Access Rights',
+    applicable: true,
+    justification: 'Strict segregation of duties and JIT access to production AWS environments.',
+    implementationStatus: 'IMPLEMENTED',
+    implementedBy: 'AWS IAM Identity Center with temporary session token expiration',
+  },
+  {
+    id: 'soa-4',
+    controlNumber: 'A.8.24',
+    controlTitle: 'Use of Cryptography',
+    applicable: true,
+    justification: 'Protection of sensitive customer data at rest and in transit.',
+    implementationStatus: 'IMPLEMENTED',
+    implementedBy: 'AWS KMS customer-managed keys (AES-256) & TLS 1.3 ingress',
+  },
+  {
+    id: 'soa-5',
+    controlNumber: 'A.7.4',
+    controlTitle: 'Physical Security Monitoring',
+    applicable: false,
+    justification: '100% cloud-native serverless architecture. AWS SOC 2 Type II report attestation relies on AWS physical data center controls.',
+    implementationStatus: 'NOT_APPLICABLE',
+    implementedBy: 'Inherited from AWS Shared Responsibility Model',
+  },
+];
+
+const FILENAME = 'soa.json';
+
+export async function GET() {
+  const soa = getStoredData(FILENAME, INITIAL_SOA);
+  return NextResponse.json(soa);
+}
+
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+    const soa = getStoredData<any[]>(FILENAME, INITIAL_SOA);
+    const item = {
+      id: `soa-${Date.now()}`,
+      ...body,
+    };
+    soa.push(item);
+    saveStoredData(FILENAME, soa);
+    return NextResponse.json(item, { status: 201 });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 400 });
+  }
+}
