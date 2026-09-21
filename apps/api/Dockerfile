@@ -21,11 +21,11 @@ COPY apps/api ./apps/api
 
 # Build types package and generate prisma client
 RUN npm run --workspace=@ai-compliance/types build || true
-RUN cd apps/api && npx prisma generate
+RUN npx prisma generate --schema=apps/api/prisma/schema.prisma
 
 # Build API
-RUN cd apps/api && npm run build
+RUN npm run build --workspace=@ai-compliance/api
 
 EXPOSE 4000
 
-CMD ["node", "apps/api/dist/main"]
+CMD ["sh", "-c", "if [ -f apps/api/dist/src/main.js ]; then node apps/api/dist/src/main.js; else node apps/api/dist/main.js; fi"]
