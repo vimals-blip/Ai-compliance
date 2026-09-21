@@ -280,6 +280,8 @@ export default function AutomatedTestsPage() {
 
     // 1. Live API remediation for GitHub
     let ghRemediationResult: any = null;
+    let isSuccess = true;
+
     if (isGh) {
       try {
         let ghToken = '';
@@ -304,95 +306,112 @@ export default function AutomatedTestsPage() {
 
         if (res.ok) {
           ghRemediationResult = await res.json();
+          isSuccess = Boolean(ghRemediationResult.liveApplied);
           setRemediationFeedback({
-            liveApplied: Boolean(ghRemediationResult.liveApplied),
-            message: ghRemediationResult.message || 'Remediation processed.',
+            liveApplied: isSuccess,
+            message: ghRemediationResult.message || (isSuccess ? 'Branch protection enabled on GitHub!' : 'GitHub API error'),
             githubSettingsUrl: ghRemediationResult.githubSettingsUrl || `https://github.com/${targetRepo}/settings/branches`,
           });
-        }
 
-        // Update stored evidence artifact so it permanently reflects compliant state
-        if (typeof window !== 'undefined') {
-          const rawEv = localStorage.getItem('ai_compliance_store_evidence');
-          if (rawEv) {
-            const evList = JSON.parse(rawEv);
-            const updatedEvList = evList.map((ev: any) => {
-              if (ev.name?.includes(targetRepo.split('/').pop()) || ev.content?.includes(targetRepo)) {
-                let parsed: any = {};
-                try {
-                  parsed = typeof ev.content === 'string' ? JSON.parse(ev.content) : ev.content;
-                } catch {}
-                parsed.branch_protected = true;
-                parsed.required_pull_request_reviews = {
-                  required_approving_review_count: 1,
-                  dismiss_stale_reviews: true,
-                  require_code_owner_reviews: false,
-                };
-                parsed.allow_force_pushes = false;
-                parsed.allow_deletions = false;
-                return {
-                  ...ev,
-                  status: 'VALID',
-                  content: JSON.stringify(parsed, null, 2),
-                  aiAnalysis: {
-                    status: 'COMPLIANT',
-                    confidence: 0.99,
-                    summary: `Branch protection rules successfully enforced on ${targetRepo}:${targetBranch}. Mandatory 1+ PR review approvals required, force pushes blocked.`,
-                    gaps: [],
-                    recommendations: ['Maintain continuous monitoring.'],
-                    citations: [{ document: ev.name, page: 1, text: `Repository: ${targetRepo}, Branch: ${targetBranch}, Protected: true` }],
-                  },
-                };
-              }
-              return ev;
-            });
-            localStorage.setItem('ai_compliance_store_evidence', JSON.stringify(updatedEvList));
+          if (isSuccess && typeof window !== 'undefined') {
+            const rawEv = localStorage.getItem('ai_compliance_store_evidence');
+            if (rawEv) {
+              const evList = JSON.parse(rawEv);
+              const updatedEvList = evList.map((ev: any) => {
+                if (ev.name?.includes(targetRepo.split('/').pop()) || ev.content?.includes(targetRepo)) {
+                  let parsed: any = {};
+                  try {
+                    parsed = typeof ev.content === 'string' ? JSON.parse(ev.content) : ev.content;
+                  } catch {}
+                  parsed.branch_protected = true;
+                  parsed.required_pull_request_reviews = {
+                    required_approving_review_count: 1,
+                    dismiss_stale_reviews: true,
+                    require_code_owner_reviews: false,
+                  };
+                  parsed.allow_force_pushes = false;
+                  parsed.allow_deletions = false;
+                  return {
+                    ...ev,
+                    status: 'VALID',
+                    content: JSON.stringify(parsed, null, 2),
+                    aiAnalysis: {
+                      status: 'COMPLIANT',
+                      confidence: 0.99,
+                      summary: `Branch protection rules successfully enforced on ${targetRepo}:${targetBranch}. Mandatory 1+ PR review approvals required, force pushes blocked.`,
+                      gaps: [],
+                      recommendations: ['Maintain continuous monitoring.'],
+                      citations: [{ document: ev.name, page: 1, text: `Repository: ${targetRepo}, Branch: ${targetBranch}, Protected: true` }],
+                    },
+                  };
+                }
+                return ev;
+              });
+              localStorage.setItem('ai_compliance_store_evidence', JSON.stringify(updatedEvList));
+            }
           }
+        } else {
+          isSuccess = false;
+          setRemediationFeedback({
+            liveApplied: false,
+            message: `GitHub API request failed with status ${res.status}.`,
+            githubSettingsUrl: `https://github.com/${targetRepo}/settings/branches`,
+          });
         }
-      } catch (err) {
+      } catch (err: any) {
+        isSuccess = false;
         console.error('Failed to execute live GitHub remediation:', err);
+        setRemediationFeedback({
+          liveApplied: false,
+          message: `Network error connecting to GitHub: ${err.message}`,
+        });
       }
     }
 
-    const nextRemediated = Array.from(new Set([...remediatedIds, test.id]));
-    setRemediatedIds(nextRemediated);
-    if (typeof window !== 'undefined') {
+    if (isSuccess) {
+      const nextRemediated = Array.from(new Set([...remediatedIds, test.id]));
+      setRemediatedIds(nextRemediated);
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('ai_compliance_remediated_tests', JSON.stringify(nextRemediated));
+        } catch {}
+      }
+
+      const updated = updatePersistedItem<AutomatedTestItem>('automated_tests', test.id, {
+        status: 'PASS',
+        lastRun: 'Just now',
+        details: resolvedDetails,
+      }, tests);
+      setTests(updated);
+
+      setSelectedTest((prev) =>
+        prev && prev.id === test.id
+          ? {
+              ...prev,
+              status: 'PASS',
+              lastRun: 'Just now',
+              details: resolvedDetails,
+            }
+          : prev
+      );
+
+      // Persist remediation to backend JSON store so it survives page reload
       try {
-        localStorage.setItem('ai_compliance_remediated_tests', JSON.stringify(nextRemediated));
-      } catch {}
-    }
-
-    const updated = updatePersistedItem<AutomatedTestItem>('automated_tests', test.id, {
-      status: 'PASS',
-      lastRun: 'Just now',
-      details: resolvedDetails,
-    }, tests);
-    setTests(updated);
-
-    setSelectedTest((prev) =>
-      prev && prev.id === test.id
-        ? {
-            ...prev,
+        await fetch('/api/tests', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: test.id,
             status: 'PASS',
-            lastRun: 'Just now',
             details: resolvedDetails,
-          }
-        : prev
-    );
-
-    // Persist remediation to backend JSON store so it survives page reload
-    try {
-      await fetch('/api/tests', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: test.id,
-          status: 'PASS',
-          details: resolvedDetails,
-        }),
-      });
-    } catch (err) {
-      console.error('Failed to persist test remediation:', err);
+          }),
+        });
+      } catch (err) {
+        console.error('Failed to persist test remediation:', err);
+      }
+    } else {
+      // If GitHub live API returned an error, highlight the Terraform IaC / CLI remediation
+      setActiveTab('terraform');
     }
 
     setRemediating(false);
