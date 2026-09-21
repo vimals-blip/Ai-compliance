@@ -207,8 +207,14 @@ export const api = {
   },
 
   // Integrations - Evidence Collection
-  collectEvidence: async (source: string) => {
-    return fetchJSON<any>(`/ai/integrations/collect?source=${source}`);
+  collectEvidence: async (source: string, payload?: any) => {
+    if (payload) {
+      return fetchJSON<any>('/ai/integrations/collect', {
+        method: 'POST',
+        body: JSON.stringify({ source: source.toLowerCase(), ...payload }),
+      });
+    }
+    return fetchJSON<any>(`/ai/integrations/collect?source=${encodeURIComponent(source)}`);
   },
   collectAllEvidence: async () => {
     return fetchJSON<any>('/ai/integrations/collect-all');

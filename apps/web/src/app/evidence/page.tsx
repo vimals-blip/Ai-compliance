@@ -222,7 +222,43 @@ Results:
   const handleAutoCollect = async (source: 'GITHUB' | 'AWS' | 'GOOGLE' | 'SLACK') => {
     setCollectingSource(source);
     try {
-      const res = await fetch(`/api/ai/integrations/collect?source=${source.toLowerCase()}`);
+      let localConfig: any = {};
+      let localMode = 'LIVE';
+      if (typeof window !== 'undefined') {
+        try {
+          const overrides = JSON.parse(localStorage.getItem('ai_compliance_integrations_overrides') || '{}');
+          const match =
+            overrides[source.toLowerCase()] ||
+            overrides[source] ||
+            (Object.values(overrides).find(
+              (o: any) =>
+                o?.name?.toLowerCase().includes(source.toLowerCase()) ||
+                o?.id?.toLowerCase() === source.toLowerCase()
+            ) as any);
+          if (match) {
+            localConfig = match.config || {};
+            localMode = match.connectionMode || 'LIVE';
+          }
+        } catch {}
+      }
+
+      const res = await fetch('/api/ai/integrations/collect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          source: source.toLowerCase(),
+          connectionMode: localMode,
+          config: localConfig,
+          token: localConfig.token,
+          repo: localConfig.repo,
+          accessKeyId: localConfig.accessKeyId,
+          secretAccessKey: localConfig.secretAccessKey,
+          region: localConfig.region,
+          domain: localConfig.domain,
+          channel: localConfig.channel,
+        }),
+      });
+
       if (!res.ok) throw new Error(`Collection failed with status ${res.status}`);
       const data = await res.json();
 

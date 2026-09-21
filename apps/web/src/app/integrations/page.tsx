@@ -266,7 +266,28 @@ export default function IntegrationsPage() {
     setScanning(true);
     setScanSuccess(false);
     try {
-      await api.collectEvidence(activeDrawer.id);
+      let liveConfig = activeDrawer.config || {};
+      if (typeof window !== 'undefined') {
+        try {
+          const overrides = JSON.parse(localStorage.getItem('ai_compliance_integrations_overrides') || '{}');
+          const matched = overrides[activeDrawer.id] || overrides[activeDrawer.id.toLowerCase()];
+          if (matched && matched.config) {
+            liveConfig = { ...liveConfig, ...matched.config };
+          }
+        } catch {}
+      }
+
+      await api.collectEvidence(activeDrawer.id, {
+        source: activeDrawer.id.toLowerCase(),
+        connectionMode: activeDrawer.connectionMode || 'LIVE',
+        config: liveConfig,
+        token: liveConfig.token,
+        accessKeyId: liveConfig.accessKeyId,
+        secretAccessKey: liveConfig.secretAccessKey,
+        region: liveConfig.region,
+        domain: liveConfig.domain,
+        channel: liveConfig.channel,
+      });
     } catch {
       // simulated fallback
     } finally {
