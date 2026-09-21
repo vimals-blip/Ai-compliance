@@ -13,6 +13,10 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { AIModule } from './modules/ai/ai.module';
 import { SoaModule } from './modules/soa/soa.module';
 import { MeasuresModule } from './modules/measures/measures.module';
+import { IntegrationsModule } from './modules/integrations/integrations.module';
+import { TestsModule } from './modules/tests/tests.module';
+import { PoliciesModule } from './modules/policies/policies.module';
+import { ExportModule } from './modules/export/export.module';
 
 @Module({
   imports: [
@@ -33,6 +37,10 @@ import { MeasuresModule } from './modules/measures/measures.module';
     AIModule,
     SoaModule,
     MeasuresModule,
+    IntegrationsModule,
+    TestsModule,
+    PoliciesModule,
+    ExportModule,
   ],
 })
 export class AppModule {}

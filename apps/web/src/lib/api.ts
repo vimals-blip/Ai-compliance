@@ -1,11 +1,23 @@
-export const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL && process.env.NEXT_PUBLIC_API_URL.trim() !== '')
-  ? process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, '')
-  : '/api';
+function normalizeBaseUrl(rawUrl?: string): string {
+  if (!rawUrl || rawUrl.trim() === '') {
+    return '/api';
+  }
+  const clean = rawUrl.trim().replace(/\/+$/, '');
+  // If it's a full http(s) URL and doesn't end with /api, ensure /api prefix is present for the NestJS API
+  if (clean.startsWith('http://') || clean.startsWith('https://')) {
+    if (!clean.endsWith('/api')) {
+      return `${clean}/api`;
+    }
+  }
+  return clean;
+}
+
+export const API_BASE_URL = normalizeBaseUrl(process.env.NEXT_PUBLIC_API_URL);
 
 async function fetchJSON<T>(endpoint: string, options?: RequestInit): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint}`;
+  const primaryUrl = `${API_BASE_URL}${endpoint}`;
   try {
-    const res = await fetch(url, {
+    const res = await fetch(primaryUrl, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
@@ -13,12 +25,47 @@ async function fetchJSON<T>(endpoint: string, options?: RequestInit): Promise<T>
       },
       cache: 'no-store',
     });
-    if (!res.ok) {
-      const errorBody = await res.text();
-      throw new Error(`API error ${res.status}: ${errorBody || res.statusText}`);
+
+    if (res.ok) {
+      return await res.json();
     }
-    return await res.json();
+
+    // If external API returns 404 or 5xx, try fallback to Next.js route handler
+    if (API_BASE_URL !== '/api' && (res.status === 404 || res.status >= 500)) {
+      try {
+        const fallbackRes = await fetch(`/api${endpoint}`, {
+          ...options,
+          headers: {
+            'Content-Type': 'application/json',
+            ...(options?.headers || {}),
+          },
+          cache: 'no-store',
+        });
+        if (fallbackRes.ok) {
+          return await fallbackRes.json();
+        }
+      } catch {}
+    }
+
+    const errorBody = await res.text();
+    throw new Error(`API error ${res.status}: ${errorBody || res.statusText}`);
   } catch (err: any) {
+    // If network error occurred contacting external API, attempt Next.js local API fallback
+    if (API_BASE_URL !== '/api') {
+      try {
+        const fallbackRes = await fetch(`/api${endpoint}`, {
+          ...options,
+          headers: {
+            'Content-Type': 'application/json',
+            ...(options?.headers || {}),
+          },
+          cache: 'no-store',
+        });
+        if (fallbackRes.ok) {
+          return await fallbackRes.json();
+        }
+      } catch {}
+    }
     throw err;
   }
 }
@@ -169,14 +216,31 @@ export const api = {
 
   // Export
   exportAuditorPackage: async (data: { company_name: string; cloud_provider: string; mfa_tool: string }) => {
-    const url = `${API_BASE_URL}/export/auditor-package`;
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) throw new Error('Export failed');
-    return res.blob();
+    const primaryUrl = `${API_BASE_URL}/export/auditor-package`;
+    try {
+      let res = await fetch(primaryUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok && API_BASE_URL !== '/api') {
+        res = await fetch('/api/export/auditor-package', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+      }
+      if (!res.ok) throw new Error('Export failed');
+      return res.blob();
+    } catch {
+      const res = await fetch('/api/export/auditor-package', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error('Export failed');
+      return res.blob();
+    }
   },
 
   // Measures (Test Once, Comply Many)
