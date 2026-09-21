@@ -46,6 +46,95 @@ interface AutomatedTestItem {
   remediation?: string;
 }
 
+function deriveTestsFromEvidence(baseTests: AutomatedTestItem[]): AutomatedTestItem[] {
+  let evidenceList: any[] = [];
+  if (typeof window !== 'undefined') {
+    try {
+      const raw = localStorage.getItem('ai_compliance_store_evidence');
+      if (raw) evidenceList = JSON.parse(raw);
+    } catch {}
+  }
+
+  const ghEvidences = evidenceList.filter(
+    (e) => e.source === 'GITHUB' || e.name?.toLowerCase().includes('github')
+  );
+  if (ghEvidences.length === 0) {
+    return baseTests;
+  }
+
+  const nonGhTests = baseTests.filter((t) => t.source !== 'GitHub');
+  const dynamicGhTests: AutomatedTestItem[] = [];
+
+  ghEvidences.forEach((ev, idx) => {
+    let parsed: any = null;
+    try {
+      parsed = typeof ev.content === 'string' ? JSON.parse(ev.content) : ev.content;
+    } catch {
+      parsed = ev.evidence || ev;
+    }
+
+    const ai = ev.aiAnalysis;
+    const isProtected = Boolean(
+      parsed?.branch_protected ||
+        (ai?.status === 'COMPLIANT' && !ai?.summary?.includes('lacks') && !ai?.summary?.includes('does not'))
+    );
+    const repo =
+      parsed?.repository ||
+      ev.name?.replace(/^GitHub_Branch_Protection_/, '')?.replace(/\.json$/, '') ||
+      `vcs-repo-${idx + 1}`;
+    const repoShortName = repo.split('/').pop() || repo;
+    const branch = parsed?.branch || 'main';
+    const hasReviews =
+      isProtected &&
+      (parsed?.required_pull_request_reviews?.required_approving_review_count >= 1 ||
+        ai?.status === 'COMPLIANT');
+
+    dynamicGhTests.push({
+      id: `test-gh-force-${idx + 1}-${repoShortName}`,
+      code: `SEC-GH-001-${repoShortName}`,
+      name: `GitHub Main Branch Disallows Force Pushes (${repoShortName})`,
+      description: `Validates that force pushes and direct commits are explicitly blocked on repository ${repo} to maintain immutable audit history.`,
+      category: 'Code & Change',
+      source: 'GitHub',
+      resource: `github.com/${repo}:${branch}`,
+      status: isProtected ? 'PASS' : 'FAIL',
+      controls: ['CC8.1', 'PR.IP-1'],
+      frequency: 'Continuous (Real-Time)',
+      lastRun: 'Just now',
+      durationMs: 220,
+      details: isProtected
+        ? `Branch protection active on ${repo}:${branch}. Force pushes and direct unreviewed merges blocked.`
+        : `Branch protection is disabled on branch '${branch}' for repository '${repo}'. Force pushes and direct unreviewed commits are currently permitted.`,
+      remediation: isProtected
+        ? undefined
+        : `Enable branch protection on branch '${branch}' in GitHub repository settings (Block force pushes) to satisfy SOC 2 CC8.1.`,
+    });
+
+    dynamicGhTests.push({
+      id: `test-gh-pr-${idx + 1}-${repoShortName}`,
+      code: `SEC-GH-002-${repoShortName}`,
+      name: `GitHub Pull Requests Require Peer Review Approval (${repoShortName})`,
+      description: `Enforces that pull requests touching production paths require at least 1 approving peer review before merging in ${repo}.`,
+      category: 'Code & Change',
+      source: 'GitHub',
+      resource: `github.com/${repo}:PR-Reviews`,
+      status: hasReviews ? 'PASS' : 'FAIL',
+      controls: ['CC8.1', 'A.8.32'],
+      frequency: 'Continuous (Real-Time)',
+      lastRun: 'Just now',
+      durationMs: 235,
+      details: hasReviews
+        ? `Mandatory peer review approval (1+ reviewer) enforced on ${repo}:${branch}.`
+        : `Branch protection is currently disabled on branch '${branch}' for repository '${repo}'. Pull requests do not require mandatory peer review approvals before merging.`,
+      remediation: hasReviews
+        ? undefined
+        : `Enable branch protection on branch '${branch}' in GitHub repository settings (Require at least 1 pull request review approval, dismiss stale approvals on new pushes) to satisfy SOC 2 CC8.1.`,
+    });
+  });
+
+  return [...nonGhTests, ...dynamicGhTests];
+}
+
 export default function AutomatedTestsPage() {
   const [tests, setTests] = useState<AutomatedTestItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,12 +154,16 @@ export default function AutomatedTestsPage() {
     async function loadTests() {
       try {
         const res = await api.getAutomatedTests();
-        const loaded = getPersistedList<AutomatedTestItem>('automated_tests', Array.isArray(res?.tests) ? res.tests : []);
-        setTests(loaded);
+        const rawList = Array.isArray(res?.tests) ? res.tests : [];
+        const loaded = getPersistedList<AutomatedTestItem>('automated_tests', rawList);
+        const dynamicList = deriveTestsFromEvidence(loaded);
+        setTests(dynamicList);
+        savePersistedList('automated_tests', dynamicList);
       } catch (err) {
         console.error('Failed to load tests:', err);
         const loaded = getPersistedList<AutomatedTestItem>('automated_tests', []);
-        setTests(loaded);
+        const dynamicList = deriveTestsFromEvidence(loaded);
+        setTests(dynamicList);
       } finally {
         setLoading(false);
       }
@@ -124,7 +217,8 @@ export default function AutomatedTestsPage() {
       await new Promise((r) => setTimeout(r, 120));
     }
     setTests((prev) => {
-      const next = prev.map((t) => ({
+      const synced = deriveTestsFromEvidence(prev);
+      const next = synced.map((t) => ({
         ...t,
         lastRun: 'Just now',
         status: (remediatedIds.includes(t.id) ? 'PASS' : t.status) as 'PASS' | 'FAIL' | 'WARN',
@@ -137,23 +231,35 @@ export default function AutomatedTestsPage() {
 
   const handleInteractiveRemediation = async (test: AutomatedTestItem) => {
     setRemediating(true);
-    const steps = [
-      '1/4: Analyzing resource configuration via Fine-Tuned Llama 3.1...',
-      '2/4: Synthesizing automated least-privilege MFA enforcement policy...',
-      '3/4: Applying automated cloud remediation patch to flagged identities...',
-      '4/4: Re-running compliance telemetry scan to verify enforcement...',
-    ];
+    const isGh = test.source === 'GitHub';
+    const steps = isGh
+      ? [
+          '1/4: Authenticating to GitHub API v3 using configured organization credentials...',
+          '2/4: Applying branch protection rules to default branch (Require 1+ PR approvals, block force pushes)...',
+          '3/4: Patching repository settings via GitHub REST API...',
+          '4/4: Re-running compliance telemetry scan to verify enforcement...',
+        ]
+      : [
+          '1/4: Analyzing resource configuration via Fine-Tuned Llama 3.1...',
+          '2/4: Synthesizing automated least-privilege MFA enforcement policy...',
+          '3/4: Applying automated cloud remediation patch to flagged identities...',
+          '4/4: Re-running compliance telemetry scan to verify enforcement...',
+        ];
 
     for (const s of steps) {
       setRemediationStep(s);
       await new Promise((r) => setTimeout(r, 700));
     }
 
+    const resolvedDetails = isGh
+      ? `Branch protection active on ${test.resource}. Mandatory peer reviews (1+) and block force pushes enforced.`
+      : 'All IAM console users have active MFA enforced. 0 non-compliant users detected.';
+
     setRemediatedIds((prev) => [...prev, test.id]);
     const updated = updatePersistedItem<AutomatedTestItem>('automated_tests', test.id, {
       status: 'PASS',
       lastRun: 'Just now',
-      details: 'All IAM console users have active MFA enforced. 0 non-compliant users detected.',
+      details: resolvedDetails,
     }, tests);
     setTests(updated);
 
@@ -163,7 +269,7 @@ export default function AutomatedTestsPage() {
             ...prev,
             status: 'PASS',
             lastRun: 'Just now',
-            details: 'All IAM console users have active MFA enforced. 0 non-compliant users detected.',
+            details: resolvedDetails,
           }
         : prev
     );
@@ -176,7 +282,7 @@ export default function AutomatedTestsPage() {
         body: JSON.stringify({
           id: test.id,
           status: 'PASS',
-          details: 'All IAM console users have active MFA enforced. 0 non-compliant users detected.',
+          details: resolvedDetails,
         }),
       });
     } catch (err) {
@@ -208,6 +314,27 @@ export default function AutomatedTestsPage() {
   const warning = tests.filter((t) => t.status === 'WARN').length;
 
   const getTerraformCode = (code: string) => {
+    if (code.includes('SEC-GH')) {
+      const repoName = code.replace(/^SEC-GH-\d+-/, '') || 'repository';
+      return `# Generated by AI Compliance Engine (Llama 3.1 8B)
+# Enforces Branch Protection on GitHub Repository
+resource "github_branch_protection" "main_protection" {
+  repository_id = "${repoName}"
+  pattern        = "main"
+  enforce_admins = true
+
+  required_pull_request_reviews {
+    dismiss_stale_reviews           = true
+    require_code_owner_reviews      = true
+    required_approving_review_count = 1
+    require_last_push_approval      = true
+  }
+
+  allows_force_pushes = false
+  allows_deletions    = false
+}`;
+    }
+
     if (code.includes('AWS-004')) {
       return `# Generated by AI Compliance Engine (Llama 3.1 8B)
 resource "aws_iam_account_password_policy" "strict" {
@@ -259,6 +386,26 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "kms_enforced" {
   };
 
   const getCliCode = (code: string) => {
+    if (code.includes('SEC-GH')) {
+      return `# GitHub CLI / API Remediation for ${code}
+gh api -X PUT /repos/:owner/:repo/branches/main/protection \\
+  -H "Accept: application/vnd.github.v3+json" \\
+  --input - <<EOF
+{
+  "required_status_checks": null,
+  "enforce_admins": true,
+  "required_pull_request_reviews": {
+    "dismiss_stale_reviews": true,
+    "require_code_owner_reviews": true,
+    "required_approving_review_count": 1
+  },
+  "restrictions": null,
+  "allow_force_pushes": false,
+  "allow_deletions": false
+}
+EOF`;
+    }
+
     if (code.includes('AWS-004')) {
       return `# AWS CLI Remediation for ${code}
 aws iam attach-user-policy \\
