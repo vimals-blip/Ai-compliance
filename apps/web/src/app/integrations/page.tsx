@@ -137,11 +137,24 @@ export default function IntegrationsPage() {
     'Vulnerability Scanners',
   ];
 
-  const filteredIntegrations = integrations.filter((item) => {
+  const isItemLive = (item: Integration) => {
+    return (
+      item.connectionMode === 'LIVE' ||
+      Boolean(item.config?.token && item.config.token.trim() !== '') ||
+      Boolean(item.config?.accessKeyId && item.config.accessKeyId.trim() !== '') ||
+      Boolean(item.config?.serviceAccountJson && item.config.serviceAccountJson.trim() !== '') ||
+      Boolean(item.config?.botToken && item.config.botToken.trim() !== '')
+    );
+  };
+
+  const filteredIntegrations = integrations.map((item) => ({
+    ...item,
+    connectionMode: isItemLive(item) ? ('LIVE' as const) : (item.connectionMode || 'SANDBOX'),
+  })).filter((item) => {
     let matchesTab = true;
     if (activeTab === 'connected') matchesTab = item.connected;
-    else if (activeTab === 'live') matchesTab = item.connected && item.connectionMode === 'LIVE';
-    else if (activeTab === 'sandbox') matchesTab = item.connected && item.connectionMode === 'SANDBOX';
+    else if (activeTab === 'live') matchesTab = item.connected && isItemLive(item);
+    else if (activeTab === 'sandbox') matchesTab = item.connected && !isItemLive(item);
 
     const matchesCategory = selectedCategory === 'All' ? true : item.category === selectedCategory;
     const matchesSearch =
@@ -152,7 +165,7 @@ export default function IntegrationsPage() {
 
   const openConfigModal = (item: Integration) => {
     setConfigItem(item);
-    setConfigModeTab(item.connectionMode === 'LIVE' ? 'LIVE' : 'SANDBOX');
+    setConfigModeTab(isItemLive(item) ? 'LIVE' : 'SANDBOX');
     setTestResult(null);
     setFormValues({
       domain: item.config?.domain || '',
@@ -295,7 +308,7 @@ export default function IntegrationsPage() {
         </span>
       );
     }
-    if (item.connectionMode === 'LIVE') {
+    if (isItemLive(item)) {
       return (
         <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Live API
@@ -323,11 +336,11 @@ export default function IntegrationsPage() {
           <div className="flex items-center space-x-2">
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-semibold border border-emerald-200">
               <span className="w-2 h-2 rounded-full bg-emerald-500" />
-              {integrations.filter((i) => i.connected && i.connectionMode === 'LIVE').length} Live
+              {integrations.filter((i) => i.connected && isItemLive(i)).length} Live
             </span>
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-800 rounded-lg text-xs font-semibold border border-amber-200">
               <span className="w-2 h-2 rounded-full bg-amber-500" />
-              {integrations.filter((i) => i.connected && i.connectionMode === 'SANDBOX').length} Sandbox
+              {integrations.filter((i) => i.connected && !isItemLive(i)).length} Sandbox
             </span>
           </div>
         </div>
@@ -527,7 +540,7 @@ export default function IntegrationsPage() {
                 <div className="p-6 space-y-6">
                   {/* Status Banner */}
                   {activeDrawer.connected ? (
-                    activeDrawer.connectionMode === 'LIVE' ? (
+                    isItemLive(activeDrawer) ? (
                       <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs space-y-2">
                         <div className="flex items-center justify-between text-emerald-900 font-semibold">
                           <div className="flex items-center space-x-2">

@@ -180,7 +180,7 @@ const DEFAULT_INTEGRATIONS: IntegrationItem[] = [
     logo: 'github',
     description: 'Verifies branch protection rules, required PR code reviews, blocking force pushes, secret scanning, and automated Dependabot alerts.',
     connected: true,
-    connectionMode: 'SANDBOX',
+    connectionMode: 'LIVE',
     capabilities: ['Automated Evidence', 'Automated Tests', 'Continuous Monitoring'],
     scopes: [
       { name: 'repo (read)', description: 'Read repository metadata and branch protection rules.' },
@@ -318,8 +318,23 @@ export class IntegrationsService {
 
     this.integrations = this.integrations.map((item) => {
       if (item.id === targetId) {
+        const hasCredentials = Boolean(
+          (body.config?.token && body.config.token.trim() !== '') ||
+          (body.config?.accessKeyId && body.config.accessKeyId.trim() !== '') ||
+          (body.config?.serviceAccountJson && body.config.serviceAccountJson.trim() !== '') ||
+          (body.config?.botToken && body.config.botToken.trim() !== '')
+        );
         const nextConnected = typeof body.connected === 'boolean' ? body.connected : !item.connected;
-        const nextMode = body.connectionMode || (nextConnected ? (item.connectionMode || 'SANDBOX') : 'UNCONFIGURED');
+        let nextMode = body.connectionMode;
+        if (!nextMode) {
+          if (!nextConnected) {
+            nextMode = 'UNCONFIGURED';
+          } else if (hasCredentials || body.mode === 'LIVE') {
+            nextMode = 'LIVE';
+          } else {
+            nextMode = item.connectionMode || 'SANDBOX';
+          }
+        }
         updatedItem = {
           ...item,
           ...body,
