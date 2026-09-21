@@ -386,18 +386,6 @@ async def extract_pdf_text(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="Only PDF files are supported")
 
     try:
-        import pdfplumber
-        import numpy as np
-        from PIL import Image
-
-        # Try to import OCR — optional, graceful fallback
-        ocr_engine = None
-        try:
-            from rapidocr_onnxruntime import RapidOCR
-            ocr_engine = RapidOCR()
-        except ImportError:
-            pass
-
         # Save uploaded file to a temp file
         file_bytes = await file.read()
         with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
@@ -407,45 +395,71 @@ async def extract_pdf_text(file: UploadFile = File(...)):
         pages_data = []
         full_text_parts = []
 
-        with pdfplumber.open(tmp_path) as pdf:
-            for idx, page in enumerate(pdf.pages):
-                # 1. Direct text extraction
-                direct_text = (page.extract_text() or "").strip()
+        try:
+            import pdfplumber
+            import numpy as np
+            from PIL import Image
 
-                # 2. OCR on page image (for scanned/image-based content)
-                ocr_text = ""
-                if ocr_engine:
-                    try:
-                        img = page.to_image(resolution=150).original
-                        img_array = np.array(img)
-                        result, _ = ocr_engine(img_array)
-                        if result:
-                            ocr_text = "\n".join([line[1] for line in result])
-                    except Exception:
-                        pass  # OCR failure is non-fatal
+            # Try to import OCR — optional, graceful fallback
+            ocr_engine = None
+            try:
+                from rapidocr_onnxruntime import RapidOCR
+                ocr_engine = RapidOCR()
+            except ImportError:
+                pass
 
-                # 3. Merge: prefer whichever has more content, and supplement
-                if len(ocr_text) > len(direct_text) * 1.2:
-                    combined = ocr_text
-                elif ocr_text and direct_text:
-                    # Add OCR-only lines that aren't in direct text
-                    extra_lines = []
-                    for line in ocr_text.split("\n"):
-                        cleaned = line.strip()
-                        if cleaned and cleaned not in direct_text and len(cleaned) > 3:
-                            extra_lines.append(cleaned)
-                    combined = direct_text
-                    if extra_lines:
-                        combined += "\n" + "\n".join(extra_lines)
-                else:
-                    combined = direct_text or ocr_text
+            with pdfplumber.open(tmp_path) as pdf:
+                for idx, page in enumerate(pdf.pages):
+                    # 1. Direct text extraction
+                    direct_text = (page.extract_text() or "").strip()
 
+                    # 2. OCR on page image (for scanned/image-based content)
+                    ocr_text = ""
+                    if ocr_engine:
+                        try:
+                            img = page.to_image(resolution=150).original
+                            img_array = np.array(img)
+                            result, _ = ocr_engine(img_array)
+                            if result:
+                                ocr_text = "\n".join([line[1] for line in result])
+                        except Exception:
+                            pass  # OCR failure is non-fatal
+
+                    # 3. Merge: prefer whichever has more content, and supplement
+                    if len(ocr_text) > len(direct_text) * 1.2:
+                        combined = ocr_text
+                    elif ocr_text and direct_text:
+                        # Add OCR-only lines that aren't in direct text
+                        extra_lines = []
+                        for line in ocr_text.split("\n"):
+                            cleaned = line.strip()
+                            if cleaned and cleaned not in direct_text and len(cleaned) > 3:
+                                extra_lines.append(cleaned)
+                        combined = direct_text
+                        if extra_lines:
+                            combined += "\n" + "\n".join(extra_lines)
+                    else:
+                        combined = direct_text or ocr_text
+
+                    pages_data.append({
+                        "page": idx + 1,
+                        "text": combined,
+                        "char_count": len(combined),
+                    })
+                    full_text_parts.append(combined)
+
+        except ImportError:
+            # Fallback to pypdf
+            import pypdf
+            reader = pypdf.PdfReader(tmp_path)
+            for idx, page in enumerate(reader.pages):
+                text = (page.extract_text() or "").strip()
                 pages_data.append({
                     "page": idx + 1,
-                    "text": combined,
-                    "char_count": len(combined),
+                    "text": text,
+                    "char_count": len(text),
                 })
-                full_text_parts.append(combined)
+                full_text_parts.append(text)
 
         # Cleanup temp file
         try:
@@ -463,8 +477,6 @@ async def extract_pdf_text(file: UploadFile = File(...)):
             "pages": pages_data,
         }
 
-    except ImportError as e:
-        raise HTTPException(status_code=500, detail=f"Missing PDF processing library: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"PDF extraction failed: {str(e)}")
 
