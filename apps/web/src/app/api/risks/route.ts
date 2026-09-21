@@ -103,11 +103,29 @@ export async function PATCH(req: Request) {
       return r;
     });
 
-    if (updatedItem) {
-      saveStoredData(FILENAME, updated);
-      return NextResponse.json({ success: true, updated: updatedItem });
+    if (!updatedItem && body.id) {
+      updatedItem = {
+        id: body.id,
+        title: body.title || 'Identified Security Risk',
+        description: body.description || 'Risk factor.',
+        category: body.category || 'Infrastructure',
+        inherentLikelihood: 3,
+        inherentImpact: 3,
+        inherentRiskScore: 9,
+        residualLikelihood: 2,
+        residualImpact: 2,
+        residualRiskScore: 4,
+        treatment: 'MITIGATED',
+        severity: 'MEDIUM',
+        status: 'OPEN',
+        createdAt: new Date().toISOString(),
+        ...body,
+      };
+      updated.unshift(updatedItem);
     }
-    return NextResponse.json({ error: 'Risk not found' }, { status: 404 });
+
+    saveStoredData(FILENAME, updated);
+    return NextResponse.json({ success: true, updated: updatedItem || body });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 400 });
   }

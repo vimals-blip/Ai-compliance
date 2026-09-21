@@ -226,12 +226,28 @@ export async function PATCH(req: Request) {
       return p;
     });
 
-    if (updatedItem) {
-      saveStoredData(FILENAME, updated);
-      return NextResponse.json({ success: true, policy: updatedItem });
-    } else {
-      return NextResponse.json({ error: 'Policy not found' }, { status: 404 });
+    if (!updatedItem && body.id) {
+      updatedItem = {
+        id: body.id,
+        title: body.title || 'Compliance Policy',
+        framework: body.framework || 'SOC 2',
+        status: body.status || 'PUBLISHED',
+        assignee: { name: 'Alex Rivera', initials: 'AR' },
+        approver: 'Compliance Lead',
+        department: 'GOV',
+        version: 'v1.0',
+        recurrence: 'Annually',
+        entities: 'Organization Wide',
+        updatedAt: new Date().toISOString().split('T')[0],
+        requirement: 'Organizational compliance policy requirement.',
+        content: body.content || '',
+        ...body,
+      };
+      updated.unshift(updatedItem);
     }
+
+    saveStoredData(FILENAME, updated);
+    return NextResponse.json({ success: true, policy: updatedItem || body });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 400 });
   }

@@ -334,7 +334,7 @@ export async function PATCH(req: Request) {
     let updatedItem: any = null;
 
     const updated = tests.map((t) => {
-      if (t.id === body.id) {
+      if (t.id === body.id || t.code === body.id || (body.id && t.id.includes(body.id))) {
         updatedItem = {
           ...t,
           ...body,
@@ -345,11 +345,29 @@ export async function PATCH(req: Request) {
       return t;
     });
 
-    if (updatedItem) {
-      saveStoredData(FILENAME, updated);
-      return NextResponse.json({ success: true, test: updatedItem });
+    if (!updatedItem && body.id) {
+      // Upsert dynamic test if not in initial static store
+      updatedItem = {
+        id: body.id,
+        code: body.code || `SEC-GEN-${body.id.slice(0, 6)}`,
+        name: body.name || 'Automated Security Check',
+        description: body.description || 'Continuous telemetry validation.',
+        category: body.category || 'Cloud Security',
+        source: body.source || 'System',
+        resource: body.resource || 'arn:aws:auto:*',
+        status: body.status || 'PASS',
+        controls: body.controls || ['CC6.1'],
+        frequency: body.frequency || 'Continuous (Real-Time)',
+        lastRun: 'Just now',
+        durationMs: 200,
+        details: body.details || 'Test executed and updated.',
+        ...body,
+      };
+      updated.unshift(updatedItem);
     }
-    return NextResponse.json({ error: 'Test not found' }, { status: 404 });
+
+    saveStoredData(FILENAME, updated);
+    return NextResponse.json({ success: true, test: updatedItem || body });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 400 });
   }

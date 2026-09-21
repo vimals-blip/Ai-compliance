@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AI-Compliance Platform - Use Cases & Client Pitch</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  @page {
+    size: A4 portrait;
+    margin: 14mm 12mm 14mm 12mm;
+    @bottom-right {
+      content: counter(page) " / " counter(pages);
+      font-size: 8pt;
+      color: #94a3b8;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #1e293b;
+    background-color: #ffffff;
+    font-size: 9.5pt;
+    line-height: 1.45;
+  }
+
+  .page-break {
+    page-break-after: always;
+  }
+
+  .avoid-break {
+    page-break-inside: avoid;
+  }
+
+  /* Header & Banner */
+  .header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #059669;
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+  }
+
+  .brand-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-icon {
+    width: 34px;
+    height: 34px;
+    background: linear-gradient(135deg, #059669 0%, #0d9488 50%, #0284c7 100%);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 800;
+    font-size: 16px;
+  }
+
+  .brand-text h1 {
+    font-size: 17pt;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+  }
+
+  .brand-text p {
+    font-size: 8pt;
+    color: #059669;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+  }
+
+  .header-meta {
+    text-align: right;
+  }
+
+  .badge-tag {
+    display: inline-block;
+    background: #ecfdf5;
+    color: #047857;
+    border: 1px solid #a7f3d0;
+    padding: 3px 9px;
+    border-radius: 9999px;
+    font-size: 7.5pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .doc-date {
+    font-size: 7.5pt;
+    color: #64748b;
+    margin-top: 3px;
+  }
+
+  /* Hero Section */
+  .hero-box {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    border-radius: 10px;
+    padding: 16px 20px;
+    color: white;
+    margin-bottom: 18px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+
+  .hero-title {
+    font-size: 14pt;
+    font-weight: 800;
+    color: #f8fafc;
+    margin-bottom: 6px;
+    line-height: 1.25;
+  }
+
+  .hero-subtitle {
+    font-size: 9pt;
+    color: #94a3b8;
+    line-height: 1.4;
+    margin-bottom: 12px;
+  }
+
+  .hero-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    border-top: 1px solid #334155;
+    padding-top: 10px;
+  }
+
+  .hero-stat-item {
+    text-align: left;
+  }
+
+  .hero-stat-value {
+    font-size: 14pt;
+    font-weight: 800;
+    color: #10b981;
+  }
+
+  .hero-stat-label {
+    font-size: 7.5pt;
+    color: #cbd5e1;
+    font-weight: 500;
+  }
+
+  /* Typography & Sections */
+  h2 {
+    font-size: 12pt;
+    font-weight: 700;
+    color: #0f172a;
+    border-left: 3.5px solid #059669;
+    padding-left: 8px;
+    margin: 14px 0 8px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  h3 {
+    font-size: 10pt;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 8px 0 4px 0;
+  }
+
+  p {
+    margin-bottom: 6px;
+    color: #334155;
+  }
+
+  /* Grid Layouts */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  /* Cards */
+  .card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  }
+
+  .card-highlight {
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-left: 3.5px solid #0284c7;
+  }
+
+  .card-emerald {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-left: 3.5px solid #059669;
+  }
+
+  .card-indigo {
+    background: #f5f3ff;
+    border: 1px solid #ddd6fe;
+    border-left: 3.5px solid #6366f1;
+  }
+
+  .card-amber {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-left: 3.5px solid #d97706;
+  }
+
+  .card-title {
+    font-size: 9.5pt;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .card-body {
+    font-size: 8.5pt;
+    color: #475569;
+    line-height: 1.4;
+  }
+
+  /* Feature Matrix Table */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0 14px 0;
+    font-size: 8.2pt;
+  }
+
+  th {
+    background: #0f172a;
+    color: #ffffff;
+    font-weight: 700;
+    text-align: left;
+    padding: 7px 10px;
+    font-size: 8pt;
+    letter-spacing: 0.3px;
+  }
+
+  td {
+    padding: 6px 10px;
+    border-bottom: 1px solid #e2e8f0;
+    color: #334155;
+  }
+
+  tr:nth-child(even) td {
+    background-color: #f8fafc;
+  }
+
+  .table-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 7pt;
+    font-weight: 700;
+  }
+
+  .badge-pass { background: #dcfce7; color: #166534; }
+  .badge-fail { background: #fee2e2; color: #991b1b; }
+  .badge-warn { background: #fef3c7; color: #92400e; }
+  .badge-info { background: #e0f2fe; color: #075985; }
+
+  /* Flow Steps */
+  .flow-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 10px 0;
+  }
+
+  .flow-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 8px 12px;
+  }
+
+  .step-num {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #059669;
+    color: white;
+    font-size: 8pt;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .step-content h4 {
+    font-size: 9pt;
+    font-weight: 700;
+    color: #0f172a;
+  }
+
+  .step-content p {
+    font-size: 8.2pt;
+    color: #475569;
+    margin: 2px 0 0 0;
+  }
+
+  /* Code snippet block */
+  .code-block {
+    background: #0f172a;
+    color: #38bdf8;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 7.8pt;
+    padding: 8px 12px;
+    border-radius: 6px;
+    margin: 6px 0;
+    line-height: 1.35;
+    white-space: pre-wrap;
+  }
+
+  /* Pitch Highlight Banner */
+  .pitch-banner {
+    background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+    color: white;
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin: 12px 0;
+  }
+
+  .pitch-banner h3 {
+    color: #f0fdf4;
+    font-size: 11pt;
+    font-weight: 800;
+    margin-bottom: 4px;
+  }
+
+  .pitch-banner p {
+    color: #d1fae5;
+    font-size: 8.5pt;
+    line-height: 1.4;
+  }
+
+  /* Sign-off footer */
+  .signoff-box {
+    display: flex;
+    justify-content: space-between;
+    border-top: 1px solid #cbd5e1;
+    padding-top: 12px;
+    margin-top: 16px;
+    font-size: 8pt;
+  }
+
+  .signoff-party {
+    width: 45%;
+  }
+
+  .signoff-line {
+    border-bottom: 1px solid #94a3b8;
+    height: 24px;
+    margin-bottom: 4px;
+  }
+</style>
+</head>
+<body>
+
+  <!-- ==================== PAGE 1: EXECUTIVE OVERVIEW & WHAT WE PROVIDE ==================== -->
+  <div class="header-container">
+    <div class="brand-logo">
+      <div class="logo-icon">🛡️</div>
+      <div class="brand-text">
+        <h1>AI-Compliance Platform</h1>
+        <p>Enterprise Autonomous GRC & Telemetry Engine</p>
+      </div>
+    </div>
+    <div class="header-meta">
+      <span class="badge-tag">Official Product Pitch & Use Case Dossier</span>
+      <div class="doc-date">Version 2.4 &bull; Multi-Framework Compliant</div>
+    </div>
+  </div>
+
+  <!-- Hero Pitch Banner -->
+  <div class="hero-box">
+    <div class="hero-title">Continuous, AI-Driven Compliance Automation for High-Growth Tech Companies</div>
+    <div class="hero-subtitle">
+      Transform 6–12 months of manual auditor back-and-forth into a 14-day automated workflow. 
+      Eliminate spreadsheet chaos, continuous screenshot harvesting, and expensive consulting fees with sovereign local AI.
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat-item">
+        <div class="hero-stat-value">90%</div>
+        <div class="hero-stat-label">Audit Prep Time Saved</div>
+      </div>
+      <div class="hero-stat-item">
+        <div class="hero-stat-value">153+</div>
+        <div class="hero-stat-label">Continuous Auto Tests</div>
+      </div>
+      <div class="hero-stat-item">
+        <div class="hero-stat-value">100%</div>
+        <div class="hero-stat-label">Sovereign Data Privacy</div>
+      </div>
+      <div class="hero-stat-item">
+        <div class="hero-stat-value">1-Click</div>
+        <div class="hero-stat-label">CPA Auditor ZIP Package</div>
+      </div>
+    </div>
+  </div>
+
+  <h2>1. What We Are Providing (The Solution Suite)</h2>
+  <p>
+    The <strong>AI-Compliance Platform</strong> is an end-to-end autonomous Governance, Risk, and Compliance (GRC) operating system. It bridges the gap between engineering infrastructure and regulatory auditing standards.
+  </p>
+
+  <div class="grid-3 avoid-break">
+    <div class="card card-emerald">
+      <div class="card-title">🤖 1. Autonomous Policy Center</div>
+      <div class="card-body">
+        Generates 10 full-length, legally vetted compliance policies tailored to your exact tech stack in under 60 seconds. Supports 3-stage workflows (Draft &rarr; Approve &rarr; Attest) with downloadable signed PDF/DOCX artifacts.
+      </div>
+    </div>
+    <div class="card card-highlight">
+      <div class="card-title">⚡ 2. 153 Continuous Tests</div>
+      <div class="card-body">
+        Evaluates AWS, GitHub, Google Workspace, and Slack 24/7. Validates KMS encryption, IAM MFA enforcement, branch protection, peer code reviews, and secret scanning without manual intervention.
+      </div>
+    </div>
+    <div class="card card-indigo">
+      <div class="card-title">🛠️ 3. 1-Click AI Remediation</div>
+      <div class="card-body">
+        Identifies security drift and failing controls, automatically generating copy-paste <strong>Terraform IaC</strong> and <strong>AWS CLI scripts</strong> to fix vulnerabilities instantly and restore compliant status.
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-3 avoid-break">
+    <div class="card card-indigo">
+      <div class="card-title">📦 4. 1-Click Auditor Package</div>
+      <div class="card-body">
+        Generates an instant 18-file binary ZIP package with 10 formatted policies, 6 cryptographically signed JSON telemetry files, SHA-256 MANIFEST, and CPA auditor verification guide.
+      </div>
+    </div>
+    <div class="card card-emerald">
+      <div class="card-title">🔍 5. RAG Gap Analysis</div>
+      <div class="card-body">
+        pgvector-powered semantic auditor engine that cross-references your internal security manuals and PDFs against SOC 2 CC, ISO 27001, and NIST CSF controls with exact citations.
+      </div>
+    </div>
+    <div class="card card-amber">
+      <div class="card-title">🌐 6. Common Controls Framework</div>
+      <div class="card-body">
+        <strong>"Test Once, Comply Many"</strong> architecture. A single encrypted S3 check or PR review rule satisfies SOC 2, ISO 27001:2022, NIST CSF v2.0, and HIPAA simultaneously.
+      </div>
+    </div>
+  </div>
+
+  <h2>2. Supported Regulatory Frameworks</h2>
+  <table class="avoid-break">
+    <thead>
+      <tr>
+        <th>Framework</th>
+        <th>Target Domain</th>
+        <th>Auditor Attestation Output</th>
+        <th>Platform Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>SOC 2 Type II</strong></td>
+        <td>SaaS, Cloud Infrastructure, Data Security</td>
+        <td>AICPA Trust Services Criteria (CC1.0 – CC9.0)</td>
+        <td><span class="table-badge badge-pass">Full Continuous Automation</span></td>
+      </tr>
+      <tr>
+        <td><strong>ISO/IEC 27001:2022</strong></td>
+        <td>Global Information Security Management</td>
+        <td>93 Annex A Controls + Statement of Applicability (SoA)</td>
+        <td><span class="table-badge badge-pass">Full Continuous Automation</span></td>
+      </tr>
+      <tr>
+        <td><strong>NIST CSF v2.0</strong></td>
+        <td>Federal & Enterprise Cybersecurity</td>
+        <td>Govern, Identify, Protect, Detect, Respond, Recover</td>
+        <td><span class="table-badge badge-pass">Full Continuous Automation</span></td>
+      </tr>
+      <tr>
+        <td><strong>HIPAA Security Rule</strong></td>
+        <td>Healthcare & Protected Health Info (ePHI)</td>
+        <td>Administrative, Physical & Technical Safeguards</td>
+        <td><span class="table-badge badge-pass">Full Continuous Automation</span></td>
+      </tr>
+      <tr>
+        <td><strong>GDPR / Data Privacy</strong></td>
+        <td>EU Data Privacy & Subject Access</td>
+        <td>Data Processing Agreements, Encryption & Retention</td>
+        <td><span class="table-badge badge-info">Built-in Policy Mapping</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="page-break"></div>
+
+  <!-- ==================== PAGE 2: HOW IT WORKS & WHY IT MATTERS ==================== -->
+  <div class="header-container">
+    <div class="brand-logo">
+      <div class="logo-icon">⚙️</div>
+      <div class="brand-text">
+        <h1>AI-Compliance Platform</h1>
+        <p>Technical Architecture & Implementation Flow</p>
+      </div>
+    </div>
+    <div class="header-meta">
+      <span class="badge-tag">Architecture & Flow</span>
+      <div class="doc-date">Continuous Compliance Pipeline</div>
+    </div>
+  </div>
+
+  <h2>3. How It Works (End-to-End Workflow)</h2>
+  <p>The platform automates compliance from initial setup through auditor sign-off in five simple phases:</p>
+
+  <div class="flow-container avoid-break">
+    <div class="flow-step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <h4>5-Minute Workspace Onboarding & AI Policy Synthesis</h4>
+        <p>Select your infrastructure (AWS, GitHub, Google Workspace), and the fine-tuned sovereign Llama 3.1 AI automatically drafts your complete policy binder (IS Policy, Access Control, Incident Response, BCP, Change Management).</p>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <h4>Zero-Touch Read-Only Telemetry Harvesting</h4>
+        <p>Connect cloud APIs with non-intrusive read-only roles. The background engine harvests IAM permissions, S3 encryption statuses, KMS configurations, GitHub branch protection, and Okta MFA states every hour.</p>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <h4>Autonomous Security Testing & 1-Click Code Remediation</h4>
+        <p>153 continuous automated tests run against your live infrastructure. Failing tests immediately provide executable Terraform code and AWS CLI scripts to close security gaps in minutes.</p>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <h4>Cryptographic Evidence Vault & RAG Verification</h4>
+        <p>All evidence artifacts are timestamped and hashed with SHA-256. The pgvector semantic RAG engine matches evidence to regulatory criteria and flags any potential audit discrepancies.</p>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num">5</div>
+      <div class="step-content">
+        <h4>1-Click Auditor Package (.ZIP) & Executive Dossier Export</h4>
+        <p>Export a clean, fully organized zip package designed specifically for CPA auditors (PwC, EY, KPMG, BSI) containing all policies, evidence files, and verification digests.</p>
+      </div>
+    </div>
+  </div>
+
+  <h2>4. Why It Matters (Traditional Audits vs. AI-Compliance)</h2>
+
+  <table class="avoid-break">
+    <thead>
+      <tr>
+        <th>Evaluation Dimension</th>
+        <th>Traditional Manual Audits</th>
+        <th>AI-Compliance Platform</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Time to Audit Readiness</strong></td>
+        <td><span class="table-badge badge-fail">6 to 12 Months</span> of consultant interviews</td>
+        <td><span class="table-badge badge-pass">14 Days</span> to full readiness</td>
+      </tr>
+      <tr>
+        <td><strong>Cost & Consulting Fees</strong></td>
+        <td><span class="table-badge badge-fail">$40,000 – $100,000+</span> per framework</td>
+        <td><span class="table-badge badge-pass">80% Cost Reduction</span> via autonomous automation</td>
+      </tr>
+      <tr>
+        <td><strong>Evidence Collection</strong></td>
+        <td><span class="table-badge badge-fail">Manual Screenshots</span> in Dropbox/Google Drive</td>
+        <td><span class="table-badge badge-pass">Live API Telemetry</span> with SHA-256 signatures</td>
+      </tr>
+      <tr>
+        <td><strong>Security Visibility</strong></td>
+        <td><span class="table-badge badge-warn">Point-in-Time Snapshot</span> (stale after 1 day)</td>
+        <td><span class="table-badge badge-pass">24/7 Continuous Monitoring</span> (153 hourly tests)</td>
+      </tr>
+      <tr>
+        <td><strong>Data Privacy & AI Security</strong></td>
+        <td><span class="table-badge badge-warn">Third-Party LLMs</span> risking confidential data leaks</td>
+        <td><span class="table-badge badge-pass">100% Sovereign Local AI</span> (Zero 3rd-party data egress)</td>
+      </tr>
+      <tr>
+        <td><strong>Remediation Support</strong></td>
+        <td><span class="table-badge badge-fail">Vague PDF recommendations</span></td>
+        <td><span class="table-badge badge-pass">Copy-Paste Terraform & AWS CLI</span> auto-generated</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="card card-emerald avoid-break" style="margin-top: 10px;">
+    <div class="card-title">🔒 Sovereign AI Architecture Advantage</div>
+    <div class="card-body">
+      Unlike legacy platforms that forward sensitive customer logs and architectural data to public AI APIs, our platform runs an <strong>air-gapped, sovereign fine-tuned Llama 3.1 8B Instruct model</strong>. No internal policies, customer records, or infrastructure details ever leave your security perimeter.
+    </div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- ==================== PAGE 3: CLIENT PITCH & REAL-WORLD USE CASES ==================== -->
+  <div class="header-container">
+    <div class="brand-logo">
+      <div class="logo-icon">🚀</div>
+      <div class="brand-text">
+        <h1>AI-Compliance Platform</h1>
+        <p>Client Pitch, ROI & Real-World Use Cases</p>
+      </div>
+    </div>
+    <div class="header-meta">
+      <span class="badge-tag">Client Value Proposition</span>
+      <div class="doc-date">Enterprise Sales & Procurement Pitch</div>
+    </div>
+  </div>
+
+  <!-- The Pitch Banner -->
+  <div class="pitch-banner avoid-break">
+    <h3>The Pitch: Stop Losing Enterprise Deals Due to Missing Compliance</h3>
+    <p>
+      Enterprise buyers and Fortune 500 procurement teams will not sign SaaS contracts without a valid <strong>SOC 2 Type II</strong> or <strong>ISO 27001</strong> report. AI-Compliance unblocks your sales pipeline immediately by delivering audit-grade evidence, instant security questionnaire answers, and automated CPA-ready dossiers in two weeks.
+    </p>
+  </div>
+
+  <h2>5. How It Helps Our Clients (Quantified Business Value)</h2>
+
+  <div class="grid-2 avoid-break">
+    <div class="card card-highlight">
+      <div class="card-title">💼 Unblock Enterprise Sales Pipelines</div>
+      <div class="card-body">
+        Enterprise deals stall for 3–6 months during security reviews. With AI-Compliance, share your live SOC 2 Readiness Dossier and pre-compiled security policies to pass vendor security assessments in 24 hours.
+      </div>
+    </div>
+
+    <div class="card card-emerald">
+      <div class="card-title">⏱️ Free Up 200+ Engineering Hours</div>
+      <div class="card-body">
+        Engineers waste weeks taking screenshots of AWS IAM tables, GitHub PR approvals, and Okta 2FA logs. Our read-only connectors harvest continuous telemetry automatically with zero developer friction.
+      </div>
+    </div>
+
+    <div class="card card-indigo">
+      <div class="card-title">💰 Save $60,000 to $120,000 Annually</div>
+      <div class="card-body">
+        Replace expensive GRC consulting retainers ($250–$400/hr) with autonomous AI policy generation, real-time posture gap evaluation, and automated remediation code.
+      </div>
+    </div>
+
+    <div class="card card-amber">
+      <div class="card-title">🛡️ Eliminate Audit Failure & Penalties</div>
+      <div class="card-body">
+        Continuous telemetry testing catches security drift immediately (e.g., an S3 bucket made public or an IAM user without MFA) before auditors find it during sampling periods.
+      </div>
+    </div>
+  </div>
+
+  <h2>6. Real-World Case Studies & Use Cases</h2>
+
+  <div class="card avoid-break" style="margin-bottom: 10px;">
+    <div class="card-title">🏢 Use Case 1: Fast-Growing B2B SaaS Closing a $450k Enterprise Contract</div>
+    <div class="card-body">
+      <strong>Customer:</strong> Series A B2B Analytics Platform (35 employees, multi-tenant AWS cloud).<br>
+      <strong>Challenge:</strong> An enterprise prospect required SOC 2 Type II attestation within 30 days before signing a $450k annual contract.<br>
+      <strong>Solution:</strong> The team onboarded to AI-Compliance in 10 minutes. AI generated all 10 required policies, connected AWS and GitHub read-only telemetry, and flagged 4 IAM MFA gaps. Using the 1-click Terraform remediation, engineers closed the gaps in 2 hours.<br>
+      <strong>Result:</strong> Generated the complete 18-file Auditor ZIP Package and passed a clean SOC 2 Type II CPA audit in 16 days, closing the contract ahead of schedule.
+    </div>
+  </div>
+
+  <div class="card avoid-break" style="margin-bottom: 10px;">
+    <div class="card-title">🏥 Use Case 2: HealthTech Platform Needing HIPAA + ISO 27001 Simultaneously</div>
+    <div class="card-body">
+      <strong>Customer:</strong> Digital Health Platform handling electronic Protected Health Information (ePHI).<br>
+      <strong>Challenge:</strong> Needed simultaneous HIPAA technical safeguard compliance for US hospitals and ISO/IEC 27001:2022 for European expansion without doubling engineering workload.<br>
+      <strong>Solution:</strong> Leveraged the <strong>"Test Once, Comply Many"</strong> Common Controls Framework. Automated KMS encryption tests, access reviews, and incident response runbooks mapped automatically across both HIPAA and ISO 27001 requirements.<br>
+      <strong>Result:</strong> Reduced dual-certification effort by 75% and achieved both certifications in a single audit cycle.
+    </div>
+  </div>
+
+  <div class="card avoid-break">
+    <div class="card-title">👨‍💻 Use Case 3: DevOps & Security Team Automating Cloud Security Posture (CSPM)</div>
+    <div class="card-body">
+      <strong>Customer:</strong> FinTech Infrastructure Scale-up with 12 AWS accounts and 50+ GitHub repos.<br>
+      <strong>Challenge:</strong> Constant configuration drift; new engineers regularly created S3 buckets without encryption and merged code without peer reviews.<br>
+      <strong>Solution:</strong> Configured 153 continuous automated tests on hourly cron. Automated alerts flagged non-compliant resources in Slack with pre-built CLI remediation commands.<br>
+      <strong>Result:</strong> Reduced mean-time-to-remediate (MTTR) compliance drift from 14 days to under 15 minutes.
+    </div>
+  </div>
+
+  <!-- Sign-off Block -->
+  <div class="signoff-box avoid-break">
+    <div class="signoff-party">
+      <strong>Prepared By:</strong><br>
+      AI-Compliance Enterprise Solutions Team<br>
+      <div class="signoff-line"></div>
+      Lead GRC Architect & AI Engineering
+    </div>
+    <div class="signoff-party">
+      <strong>Auditor Compatibility:</strong><br>
+      AICPA SOC 2 &bull; ISO/IEC 27001 &bull; NIST CSF &bull; HIPAA<br>
+      <div class="signoff-line"></div>
+      Independent CPA & ISO Certification Bodies
+    </div>
+  </div>
+
+</body>
+</html>

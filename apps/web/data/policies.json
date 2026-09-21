@@ -1,5 +1,23 @@
 [
   {
+    "id": "p-1789997008226",
+    "title": "Client Demo Cryptographic Encryption Policy",
+    "framework": "SOC 2",
+    "status": "PUBLISHED",
+    "assignee": {
+      "name": "Sarah Chen",
+      "initials": "SC"
+    },
+    "approver": "Compliance Lead",
+    "department": "GOV",
+    "version": "v1.0",
+    "recurrence": "Annually",
+    "entities": "Organization Wide",
+    "updatedAt": "2026-09-21",
+    "requirement": "Customer data encrypted at rest and in transit.",
+    "content": "All data encrypted with KMS customer managed keys."
+  },
+  {
     "id": "p-1",
     "title": "Information Security (IS) Policy",
     "framework": "SOC 2",
@@ -75,7 +93,7 @@
     "id": "p-5",
     "title": "Mobile Device and Teleworking (MDM) Policy",
     "framework": "SOC 2",
-    "status": "APPROVED",
+    "status": "PUBLISHED",
     "assignee": {
       "name": "James Wilson",
       "initials": "JW"
@@ -85,7 +103,7 @@
     "version": "v1.0",
     "recurrence": "Annually",
     "entities": "All Employees",
-    "updatedAt": "2026-09-17",
+    "updatedAt": "2026-09-21",
     "requirement": "Governs remote employee workstations, mandatory full-disk encryption (FileVault/BitLocker), and screen lock timeouts.",
     "content": "# Mobile Device and Teleworking Policy\n**Version:** 1.0 | **Status:** Draft\n\n## 1. Device Security\nAll company laptops must run automated MDM profiles enforcing automatic OS security updates, local disk encryption, and 10-minute inactivity auto-lock."
   },

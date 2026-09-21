@@ -126,11 +126,26 @@ export async function PATCH(req: Request) {
       return c;
     });
 
-    if (updatedItem) {
-      saveStoredData(FILENAME, updated);
-      return NextResponse.json({ success: true, control: updatedItem });
+    if (!updatedItem && (body.id || body.code)) {
+      updatedItem = {
+        id: body.id || `c-${Date.now()}`,
+        code: body.code || 'CC_CUSTOM',
+        framework: body.framework || 'SOC 2',
+        title: body.title || 'Security Control',
+        category: body.category || 'Access Control',
+        description: body.description || '',
+        status: body.status || 'EFFECTIVE',
+        maturityLevel: body.maturityLevel || 3,
+        notes: body.notes || '',
+        evidenceMapped: body.evidenceMapped || [],
+        createdAt: new Date().toISOString(),
+        ...body,
+      };
+      updated.unshift(updatedItem);
     }
-    return NextResponse.json({ error: 'Control not found' }, { status: 404 });
+
+    saveStoredData(FILENAME, updated);
+    return NextResponse.json({ success: true, control: updatedItem || body });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 400 });
   }
