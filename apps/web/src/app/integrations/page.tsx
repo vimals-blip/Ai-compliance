@@ -87,7 +87,26 @@ export default function IntegrationsPage() {
     async function loadIntegrations() {
       try {
         const res = await api.getIntegrations();
-        setIntegrations(res.integrations || []);
+        let loadedList: Integration[] = res.integrations || [];
+        
+        // Merge with locally persisted live configurations so state never resets on reload
+        if (typeof window !== 'undefined') {
+          const savedOverrides = localStorage.getItem('ai_compliance_integrations_overrides');
+          if (savedOverrides) {
+            try {
+              const overrides = JSON.parse(savedOverrides);
+              loadedList = loadedList.map((item) => {
+                if (overrides[item.id]) {
+                  return { ...item, ...overrides[item.id] };
+                }
+                return item;
+              });
+            } catch (err) {
+              console.warn('Failed to parse local overrides:', err);
+            }
+          }
+        }
+        setIntegrations(loadedList);
       } catch (err) {
         console.error('Failed to load integrations:', err);
       } finally {
@@ -156,19 +175,14 @@ export default function IntegrationsPage() {
     setTestResult(null);
 
     try {
-      const res = await fetch('/api/integrations/test', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          source: configItem.id,
-          mode: configModeTab,
-          credentials: formValues,
-        }),
+      const data = await api.testIntegration({
+        source: configItem.id,
+        mode: configModeTab,
+        credentials: formValues,
       });
-      const data = await res.json();
       setTestResult({
         status: data.status === 'ERROR' ? 'ERROR' : 'SUCCESS',
-        message: data.message || (data.status === 'SUCCESS' ? 'Connection verified successfully!' : 'Connection test failed.'),
+        message: data.message || (data.status === 'SUCCESS' ? 'Connection verified successfully!' : 'Connection test completed.'),
         mode: data.mode,
       });
     } catch (e: any) {
@@ -196,21 +210,36 @@ export default function IntegrationsPage() {
       syncStatus: isConnecting ? 'HEALTHY' : undefined,
     };
 
+    // 1. Immediately persist to localStorage for 100% reload persistence
+    if (typeof window !== 'undefined') {
+      try {
+        const currentOverrides = JSON.parse(localStorage.getItem('ai_compliance_integrations_overrides') || '{}');
+        currentOverrides[configItem.id] = {
+          connected: isConnecting,
+          connectionMode: nextMode,
+          config: isConnecting ? formValues : {},
+          lastSync: isConnecting ? 'Just now' : undefined,
+          syncStatus: isConnecting ? 'HEALTHY' : undefined,
+        };
+        localStorage.setItem('ai_compliance_integrations_overrides', JSON.stringify(currentOverrides));
+      } catch (err) {
+        console.warn('Failed to save local overrides:', err);
+      }
+    }
+
     setIntegrations((prev) => prev.map((i) => (i.id === configItem.id ? updatedItem : i)));
     if (activeDrawer && activeDrawer.id === configItem.id) {
       setActiveDrawer(updatedItem);
     }
 
+    // 2. Persist to API backend
     try {
-      await fetch('/api/integrations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          integrationId: configItem.id,
-          connected: isConnecting,
-          connectionMode: nextMode,
-          config: isConnecting ? formValues : {},
-        }),
+      await api.updateIntegration({
+        id: configItem.id,
+        integrationId: configItem.id,
+        connected: isConnecting,
+        connectionMode: nextMode,
+        config: isConnecting ? formValues : {},
       });
     } catch (e) {
       console.warn('Backend sync failed:', e);

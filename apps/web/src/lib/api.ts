@@ -269,6 +269,18 @@ export const api = {
   getIntegrations: async () => {
     return fetchJSON<any>('/integrations');
   },
+  updateIntegration: async (data: any) => {
+    return fetchJSON<any>('/integrations', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+  testIntegration: async (data: any) => {
+    return fetchJSON<any>('/integrations/test', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
 
   // Automated Tests
   getAutomatedTests: async () => {
