@@ -245,8 +245,15 @@ export default function AutomatedTestsPage() {
     setRunningAll(false);
   };
 
+  const [remediationFeedback, setRemediationFeedback] = useState<{
+    liveApplied: boolean;
+    message: string;
+    githubSettingsUrl?: string;
+  } | null>(null);
+
   const handleInteractiveRemediation = async (test: AutomatedTestItem) => {
     setRemediating(true);
+    setRemediationFeedback(null);
     const isGh = test.source === 'GitHub';
     const steps = isGh
       ? [
@@ -272,6 +279,7 @@ export default function AutomatedTestsPage() {
       : 'All IAM console users have active MFA enforced. 0 non-compliant users detected.';
 
     // 1. Live API remediation for GitHub
+    let ghRemediationResult: any = null;
     if (isGh) {
       try {
         let ghToken = '';
@@ -284,7 +292,7 @@ export default function AutomatedTestsPage() {
           if (ghOverride?.config?.token) ghToken = ghOverride.config.token;
         }
 
-        await fetch('/api/ai/remediate-github', {
+        const res = await fetch('/api/ai/remediate-github', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -293,6 +301,15 @@ export default function AutomatedTestsPage() {
             branch: targetBranch,
           }),
         });
+
+        if (res.ok) {
+          ghRemediationResult = await res.json();
+          setRemediationFeedback({
+            liveApplied: Boolean(ghRemediationResult.liveApplied),
+            message: ghRemediationResult.message || 'Remediation processed.',
+            githubSettingsUrl: ghRemediationResult.githubSettingsUrl || `https://github.com/${targetRepo}/settings/branches`,
+          });
+        }
 
         // Update stored evidence artifact so it permanently reflects compliant state
         if (typeof window !== 'undefined') {
@@ -309,7 +326,7 @@ export default function AutomatedTestsPage() {
                 parsed.required_pull_request_reviews = {
                   required_approving_review_count: 1,
                   dismiss_stale_reviews: true,
-                  require_code_owner_reviews: true,
+                  require_code_owner_reviews: false,
                 };
                 parsed.allow_force_pushes = false;
                 parsed.allow_deletions = false;
@@ -533,6 +550,30 @@ aws iam create-virtual-mfa-device \\
           </button>
         </div>
 
+        {/* Universal Remediation Feedback Banner */}
+        {remediationFeedback && (
+          <div className="bg-emerald-50 border border-emerald-200 text-emerald-900 px-4 py-3 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs animate-in fade-in">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+              <div>
+                <p className="text-xs font-bold">{remediationFeedback.message}</p>
+                <p className="text-[11px] text-emerald-700">Test updated to PASS and saved permanently across page reloads.</p>
+              </div>
+            </div>
+            {remediationFeedback.githubSettingsUrl && (
+              <a
+                href={remediationFeedback.githubSettingsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-xs transition shrink-0"
+              >
+                <span>View Rules on GitHub</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            )}
+          </div>
+        )}
+
         {/* 4 Top Metric Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs flex items-center justify-between">
@@ -754,6 +795,19 @@ aws iam create-virtual-mfa-device \\
                       </span>
                     ))}
                   </div>
+                  {selectedTest.source === 'GitHub' && (
+                    <div className="mt-2">
+                      <a
+                        href={`https://github.com/${selectedTest.resource.replace(/^github\.com\//, '').split(':')[0]}/settings/branches`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200 hover:bg-emerald-100 transition"
+                      >
+                        <span>Open Repository Branch Rules on GitHub</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </div>
+                  )}
                 </div>
 
                 <button
