@@ -9,54 +9,96 @@
 
 ## 1. Executive Summary & Role Definition
 
-To scale this platform from hundreds of users to **millions of concurrent users and enterprise organizations (processing 100M+ daily telemetry events)**, the engineering lead must not be a generic web developer. 
-
-The ideal candidate is a **Principal / Staff Distributed Systems & AI Platform Architect** with proven expertise in high-throughput event streaming, multi-tenant database isolation, self-hosted LLM inference pipelines, and enterprise-grade security engineering.
+To scale this platform from hundreds of users to **millions of concurrent users and enterprise organizations (processing 100M+ daily telemetry events)**, the engineering lead must possess deep technical mastery across distributed systems, backend architectures (Node.js/NestJS & Python), scalable caching (Redis Cluster), and production AI/LLM evaluation pipelines.
 
 ```
 +-----------------------------------------------------------------------------------+
 |               PRINCIPAL ENGINEER CORE COMPETENCY MATRIX                            |
 +------------------------------------+----------------------------------------------+
 | 1. High-Scale Distributed Systems  | Multi-region active-active, Kafka, Envoy     |
-| 2. Multi-Tenant Database Sharding  | PostgreSQL (Citus), ClickHouse, Redis Cluster|
-| 3. Production AI & RAG Pipelines   | vLLM, Triton Inference, Qdrant/Milvus, Llama |
-| 4. Cryptographic Security & GRC    | Merkle Trees, HSM/KMS, Zero-Trust, eBPF      |
-| 5. Cloud & SRE Hyperscaling        | Kubernetes (EKS/GKE), Terraform, OpenTelemetry|
+| 2. Backend Mastery (Node & Python) | NestJS, FastAPI, AsyncIO, PyTorch, Pydantic  |
+| 3. Redis Hyperscale & Streaming    | Redis Cluster, Redis Streams, Redlock, Caching|
+| 4. Production AI & RAG Evaluation  | vLLM, Qdrant/Milvus, Ragas, Hybrid Search    |
+| 5. Multi-Tenant Database Sharding  | PostgreSQL (Citus), ClickHouse, RLS          |
+| 6. Cryptographic Security & GRC    | Merkle Trees, HSM/KMS, Zero-Trust, eBPF      |
 +------------------------------------+----------------------------------------------+
 ```
 
 ---
 
-## 2. Core Knowledge & Technical Skills Required
+## 2. Core Language & Framework Knowledge Deep Dive
 
-### A. High-Throughput Distributed Architecture & Multi-Tenancy
-* **Multi-Tenant Data Isolation**: Deep understanding of multi-tenancy models (Shared Process / Separate Schema vs. Row-Level Security `RLS` with tenant token hashing vs. Dedicated DB pods for Fortune 500 banks/MNOs).
-* **Event-Driven Ingestion Pipelines**: Building streaming ingestion pipelines using **Apache Kafka**, **Redpanda**, or **AWS Kinesis** capable of handling **50,000+ telemetry snapshots/sec** without dropping packets.
-* **Distributed Task Scheduling**: Managing distributed job orchestration using **Temporal.io**, **BullMQ**, or **Celery** with idempotency guarantees and exponential backoff retry policies.
+### A. Node.js & NestJS (Enterprise Backend & Microservices)
+The lead engineer must be an expert in enterprise TypeScript with **NestJS**, utilizing modular architecture patterns:
+* **Microservices & Transport Layers**: Building high-throughput microservices using TCP, gRPC, and Redis/Kafka transport layers in NestJS.
+* **Custom Guards, Interceptors & Pipes**: Implementing multi-tenant context extraction, JWT validation, Row-Level Security (RLS) injection, and strict input validation via `class-validator` / `zod`.
+* **Asynchronous Queue Management**: Managing high-concurrency background job processing using **BullMQ / Redis** for evidence parsing, PDF generation, and automated cloud test runs with automatic retry backoffs.
+* **ORM & Connection Pooling**: Optimizing **TypeORM** / **Prisma** / **Kysely** with pooled Postgres connections (PgBouncer) to prevent database socket exhaustion during traffic spikes.
 
-### B. High-Scale Database & Storage Engineering
-* **Relational Sharding**: Advanced PostgreSQL tuning, connection pooling (**PgBouncer** / **Supavisor**), write-ahead logging (WAL), and distributed sharding using **Citus Data** or **CockroachDB**.
-* **Time-Series & Audit Log Engines**: Utilizing **ClickHouse** or **TimescaleDB** for immutable, high-speed storage and aggregation of billions of telemetry records with sub-second query latency.
-* **Distributed Caching**: Multi-layer caching strategy with **Redis Cluster** (Cluster Mode Enabled), cache invalidation patterns (Write-through, Cache-aside), and distributed locks (`Redlock`).
+### B. Python (AI/ML Services, Data Science & Fast Inference)
+Python is the core engine for LLM orchestration, model serving, and data parsing:
+* **FastAPI Async Engine**: High-performance asynchronous API endpoints using `uvicorn` and `pydantic v2` for sub-millisecond serialization and validation.
+* **LLM Serving & Inference Engines**: Deploying and tuning open-source models (Llama 3.1 70B, DeepSeek Coder, Mistral) on **vLLM** and **Triton Inference Server** with dynamic batching, PagedAttention, and FP8/AWQ quantization.
+* **Orchestration & Task Workers**: Distributed background task distribution using **Celery** with Redis/RabbitMQ brokers for long-running audit package compilations.
+* **Deep Learning & NLP Stack**: **PyTorch**, **HuggingFace Transformers**, **Tokenizers**, and **Sentence-Transformers** for custom embedding fine-tuning.
 
-### C. Enterprise AI/LLM & RAG Pipeline Optimization
-* **High-Throughput Inference Engines**: Deploying and tuning self-hosted open-source LLMs (Llama 3.1 70B, DeepSeek Coder, Mistral) on **vLLM**, **TGI (Text Generation Inference)**, or **NVIDIA Triton Inference Server** with dynamic batching, PagedAttention, and FP8/AWQ quantization.
-* **Scalable Vector Search**: Indexing millions of compliance documents in distributed vector databases (**Qdrant**, **Milvus**, or **pgvector on Citus**) using HNSW indexing and semantic caching to prevent redundant LLM invocations.
-* **Deterministic Guardrails & Structured Output**: Enforcing schema adherence (JSON Schema / Pydantic) with Outlines / Guidance to guarantee 100% syntactically valid compliance reports.
-
-### D. Cryptographic Integrity & Data Sovereignty
-* **Immutable Audit Trails**: Building cryptographic **Merkle Trees** and tamper-evident ledgers for compliance evidence and configuration logs.
-* **Envelope Encryption & Key Management**: Utilizing **AWS KMS**, **HashiCorp Vault**, or **Cloud HSM** to encrypt tenant data at rest using customer-managed keys (BYOK - Bring Your Own Key).
-* **Data Sovereignty Controls**: Routing and pinning tenant telemetry data to regional sovereign clusters (e.g. EU data in Frankfurt, African telecom data in Zambia/South Africa).
-
-### E. Cloud Infrastructure, Kubernetes & SRE
-* **Container Orchestration**: Production **Kubernetes (EKS / GKE)** with Horizontal Pod Autoscaling (HPA), KEDA (Kubernetes Event-driven Autoscaling), and node auto-provisioning (**Karpenter**).
-* **Service Mesh & Traffic Engineering**: **Istio** or **Envoy Gateway** for mTLS encryption, canary deployments, rate limiting (Token Bucket / Leaky Bucket), and circuit breaking.
-* **Full-Stack Observability**: Distributed tracing, metrics, and log aggregation using **OpenTelemetry**, **Prometheus**, **Grafana**, and **Loki**.
+### C. Redis (Hyperscale Caching, Streams & Distributed Coordination)
+Redis is the platform's distributed memory backbone:
+* **Redis Cluster Mode**: Sharding keys across multi-node Redis clusters with automated failover and master-replica replication.
+* **Redis Streams (Event Streaming)**: Ingesting high-speed configuration changes and telemetry snapshots from cloud APIs (GitHub, AWS, Okta) into consumer groups for parallel worker processing.
+* **Distributed Locking (`Redlock`)**: Preventing race conditions during automated remediation, policy updates, and audit report generation across concurrent worker pods.
+* **Token-Bucket Rate Limiting**: Protecting public APIs and webhooks against DDoS and abuse using Redis atomic scripts (`evalsha`).
+* **Semantic Vector Caching**: Utilizing **Redis Stack (RediSearch)** to cache LLM compliance evaluations. If the exact same AWS IAM or GitHub configuration was evaluated previously, return the cached AI verdict in <5ms without calling the LLM.
 
 ---
 
-## 3. Hyperscale System Architecture (1M+ Users Blueprint)
+## 3. Production AI, LLM Flow & RAG Evaluation Architecture
+
+Compliance evaluation requires **100% deterministic, hallucination-free AI evaluation** with cryptographic evidence citations.
+
+```
+                           [ Compliance Audit Request ]
+                                        │
+                                        ▼
+                   [ 1. Document / Evidence Ingestion Engine ]
+                 (PDF / JSON / Markdown Parsers & Chunking)
+                                        │
+                                        ▼
+                  [ 2. Hybrid Search (Dense + Sparse BM25) ]
+               (Qdrant Vector Store + BGE-Large Dense Embeddings)
+                                        │
+                                        ▼
+                     [ 3. Cross-Encoder Re-Ranking Stage ]
+                  (Cohere / BAAI Re-Ranker: Top 5 Relevant Chunks)
+                                        │
+                                        ▼
+                    [ 4. Multi-Agent LLM Reasoning Engine ]
+                  (vLLM / Llama 3.1 70B with Structured Schema)
+                                        │
+                                        ▼
+                 [ 5. Automated RAG Evaluation & Validation ]
+                  (Faithfulness, Citation Precision & Recall)
+                                        │
+                                        ▼
+                [ 6. Signed Verdict & Cryptographic Manifest ]
+```
+
+### A. The 6-Stage RAG Pipeline
+1. **Intelligent Chunking & Semantic Boundary Detection**: Splitting enterprise policies, SOC 2 / ISO 27001 standard texts, and raw JSON logs into semantic hierarchy chunks (Control $\rightarrow$ Sub-requirement $\rightarrow$ Evidence Criteria).
+2. **Hybrid Search**: Combining **Dense Vector Embeddings** (semantic meaning) with **Sparse BM25 Keyword Search** (exact matching for control codes like `CC8.1` or `A.8.24`) to achieve 99.5%+ retrieval recall.
+3. **Cross-Encoder Re-Ranking**: Running retrieved candidate chunks through a cross-encoder re-ranker to filter out noise and surface only the exact evidence excerpts required for compliance verification.
+4. **Structured LLM Output Enforcement**: Enforcing strict Pydantic JSON schemas (`status: COMPLIANT | PARTIAL | NON_COMPLIANT`, `confidence: float`, `gaps: string[]`, `citations: {document, page, excerpt}[]`) using Outlines/Guidance.
+5. **Continuous RAG Evaluation Metrics (Ragas Framework)**:
+   * **Faithfulness**: Mathematically verifying that 100% of claims in the AI summary are directly derived from the retrieved evidence (0% hallucination tolerance).
+   * **Answer Relevance**: Ensuring the generated audit recommendation directly resolves the compliance control gap.
+   * **Context Precision & Recall**: Measuring whether the vector search accurately retrieved all necessary compliance guidelines.
+6. **Dynamic Model Cascading (Cost & Speed Optimization)**:
+   * *Stage 1 (Extraction)*: Small/Fast model (Llama 3.1 8B / Mistral 7B) for log parsing and entity extraction ($0.0001/call).
+   * *Stage 2 (Evaluation & Reasoning)*: Large model (Llama 3.1 70B / DeepSeek) for multi-framework compliance analysis and audit synthesis.
+
+---
+
+## 4. Hyperscale System Architecture (1M+ Users Blueprint)
 
 ```
                             [ 1M+ Concurrent Users & Cloud APIs ]
@@ -96,51 +138,51 @@ The ideal candidate is a **Principal / Staff Distributed Systems & AI Platform A
 
 ---
 
-## 4. Candidate Interview & Screening Evaluation
+## 5. Candidate Interview & Screening Evaluation
 
 When interviewing candidates to lead this platform's development, evaluate them against these practical scenarios:
 
 ### Technical Interview Questions
 
-1. **Multi-Tenancy & Sharding at Scale**:
-   * *Question:* *"We have 100,000 companies, each generating 500 configuration checks every hour. How would you design the PostgreSQL database schema and sharding strategy to ensure zero data leakage between tenants while keeping queries under 50ms?"*
-   * *Look For:* Discussion of Tenant ID partitioning, Citus distributed tables, Row-Level Security (RLS), connection pooling with PgBouncer, and separating operational data from time-series telemetry.
+1. **NestJS Architecture & Multi-Tenancy**:
+   * *Question:* *"In NestJS, how do you architect dynamic multi-tenant database connection pooling so that 50,000 enterprise tenants each have isolated data without exceeding database socket limits?"*
+   * *Look For:* Custom NestJS Middleware/Interceptors creating AsyncLocalStorage execution contexts, dynamic connection resolution with PgBouncer, and tenant schema switching.
 
-2. **AI Inference Cost & Latency Optimization**:
-   * *Question:* *"Calling OpenAI APIs for 10 million automated evidence evaluations per day is financially impossible. How would you architect a self-hosted inference cluster with open-source LLMs to achieve sub-200ms latency and high concurrency?"*
-   * *Look For:* Mentioning vLLM / Triton, PagedAttention, continuous batching, quantized weights (FP8/AWQ), semantic vector caching, and fallback queues.
+2. **Python & High-Throughput RAG Inference**:
+   * *Question:* *"We need to evaluate 500,000 compliance evidence documents per hour. How do you design the Python pipeline with vLLM, Qdrant, and Redis to achieve high concurrency while avoiding GPU out-of-memory (OOM) errors?"*
+   * *Look For:* PagedAttention in vLLM, continuous batching, asynchronous vector batching in Qdrant, and semantic caching in Redis to bypass redundant LLM inference calls.
 
-3. **Cryptographic Proof & Immutable Non-Repudiation**:
+3. **Redis Caching & Distributed Synchronization**:
+   * *Question:* *"Explain how you would use Redis Streams and Redlock in our platform to ensure that cloud auto-remediations (e.g. GitHub branch protection or AWS S3 bucket encryption) are executed exactly once across a cluster of 50 worker pods."*
+   * *Look For:* Redis consumer groups with ACK acknowledgments, distributed mutex locking via Redlock with TTLs, and dead-letter queues (DLQ).
+
+4. **Cryptographic Proof & Immutable Non-Repudiation**:
    * *Question:* *"An enterprise auditor suspects a company tampered with their compliance test history. How do you cryptographically prove that the evidence collected 6 months ago was untouched?"*
    * *Look For:* SHA-256 Merkle tree verification, signed time-stamping authorities (RFC 3161), immutable S3 Object Lock (WORM storage), and cryptographic signature validation.
 
-4. **Zero-Downtime Migration & Scaling**:
-   * *Question:* *"How do you handle schema migrations across thousands of sharded tenant databases during peak traffic without locking tables or dropping API calls?"*
-   * *Look For:* Blue-green deployments, backward-compatible dual-writing, gh-ost / pg_repack zero-downtime schema migrations, and feature flags.
-
 ---
 
-## 5. Candidate Hiring Profile Checklist
+## 6. Candidate Hiring Profile Checklist
 
 | Criteria | Minimum Requirement | Preferred / Ideal |
 | :--- | :--- | :--- |
 | **Experience** | 7+ years in Backend / Distributed Systems | 10+ years scaling B2B SaaS to $50M+ ARR / 1M+ users |
-| **Languages** | TypeScript (Node/Nest), Python (FastAPI/PyTorch), SQL | **Go / Rust** (for high-speed ingestion) + Python + TS |
-| **Databases** | PostgreSQL, Redis, Elasticsearch | **PostgreSQL (Citus / RLS), ClickHouse, Qdrant/Milvus** |
-| **Cloud / Infra** | AWS / Azure, Docker, Kubernetes | **EKS/GKE, Terraform/Terragrunt, Envoy, Karpenter** |
-| **AI / ML** | LangChain / LlamaIndex, OpenAI APIs | **vLLM, TensorRT-LLM, fine-tuning LoRA, CUDA optimization** |
-| **Security & GRC** | Basic understanding of SOC 2 / ISO 27001 | **Deep knowledge of zero-trust architecture, KMS, FedRAMP** |
+| **Languages** | TypeScript (Node/NestJS), Python (FastAPI/PyTorch), SQL | **Go / Rust** (for ingestion) + Python + TypeScript |
+| **Frameworks** | NestJS, Express, FastAPI, Celery, LangChain | **NestJS Microservices, vLLM, Pydantic v2, BullMQ** |
+| **Databases & Cache**| PostgreSQL, Redis, Elasticsearch | **PostgreSQL (Citus / RLS), Redis Cluster & Streams, ClickHouse, Qdrant** |
+| **Cloud & SRE** | AWS / Azure, Docker, Kubernetes | **EKS/GKE, Terraform/Terragrunt, Envoy, Karpenter, Prometheus** |
+| **AI / RAG Stack** | Basic OpenAI API calls | **vLLM, TensorRT-LLM, Ragas evaluation, Hybrid BM25/Dense search** |
 
 ---
 
-## 6. Engineering Scaling Roadmap (Phase 1 to Phase 3)
+## 7. Engineering Scaling Roadmap (Phase 1 to Phase 3)
 
 ```mermaid
 flowchart LR
-    P1["Phase 1: Foundations (0 - 10k Users)<br/>• Modular Monolith (NestJS + Next.js)<br/>• PostgreSQL + Redis Cache<br/>• Containerized Cloud API Collectors"] --> P2["Phase 2: Hyper-Growth (10k - 250k Users)<br/>• Kafka Event Streaming<br/>• Citus Distributed DB Sharding<br/>• Self-Hosted vLLM Inference Pods<br/>• ClickHouse Audit Telemetry"]
+    P1["Phase 1: Foundations (0 - 10k Users)<br/>• Modular Monolith (NestJS + Next.js)<br/>• PostgreSQL + Redis Cache<br/>• Containerized Cloud API Collectors"] --> P2["Phase 2: Hyper-Growth (10k - 250k Users)<br/>• Kafka / Redis Streams Pipeline<br/>• Citus Distributed DB Sharding<br/>• Self-Hosted vLLM Inference Pods<br/>• ClickHouse Audit Telemetry"]
     P2 --> P3["Phase 3: Global Scale (1M+ Users)<br/>• Multi-Region Active-Active Mesh<br/>• Rust High-Speed Edge Collectors<br/>• Automated Sovereign Compliance Enclaves<br/>• Global Zero-Trust Service Fabric"]
 ```
 
 ---
 
-*Document maintained by CIS Enterprise Architecture Group &bull; Version 3.0 &bull; Confidential*
+*Document maintained by CIS Enterprise Architecture Group &bull; Version 3.1 &bull; Confidential*
